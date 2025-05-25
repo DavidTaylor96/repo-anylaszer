@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 # Import the CLI and run it
-from src.main import cli
+from src.main import main
 
 if __name__ == '__main__':
-    cli()
+    main()

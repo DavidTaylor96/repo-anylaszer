@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import os
-import click
+import argparse
 import logging
 import sys
 from typing import Dict, List, Any, Optional
@@ -188,29 +188,12 @@ class RepositoryAnalyzer:
         logger.info(f"Documentation generated ({doc_size / 1024:.2f} KB)")
 
 
-@click.group()
-def cli():
-    """
-    Repository Analyzer CLI - Generate comprehensive documentation from code repositories.
-    """
-    pass
-
-
-@cli.command('scan')
-@click.argument('repo_path', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.option('--output', '-o', default='analysis.md', help='Output file path')
-@click.option('--focus', '-f', multiple=True, help='Focus on specific analysis types (structure, dependencies, api)')
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 def scan_command(repo_path, output, focus, verbose):
-    """
-    Scan a single repository and generate documentation.
-    
-    REPO_PATH is the path to the repository to analyze.
-    """
+    """Scan a single repository and generate documentation."""
     if verbose:
         logging.getLogger("repo-analyzer").setLevel(logging.DEBUG)
     
-    focus_list = list(focus) if focus else ['all']
+    focus_list = focus if focus else ['all']
     analyzer = RepositoryAnalyzer(repo_path, output, focus_list)
     success = analyzer.analyze()
     
@@ -218,17 +201,8 @@ def scan_command(repo_path, output, focus, verbose):
         sys.exit(1)
 
 
-@cli.command('scan-multi')
-@click.argument('repo_paths', type=click.Path(exists=True, file_okay=False, dir_okay=True), nargs=-1)
-@click.option('--output', '-o', default='combined_analysis.md', help='Output file path')
-@click.option('--focus', '-f', multiple=True, help='Focus on specific analysis types (structure, dependencies, api)')
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 def scan_multi_command(repo_paths, output, focus, verbose):
-    """
-    Scan multiple repositories and generate combined documentation.
-    
-    REPO_PATHS are the paths to the repositories to analyze.
-    """
+    """Scan multiple repositories and generate combined documentation."""
     if verbose:
         logging.getLogger("repo-analyzer").setLevel(logging.DEBUG)
     
@@ -236,7 +210,7 @@ def scan_multi_command(repo_paths, output, focus, verbose):
         console.print("[red]Error: At least one repository path is required")
         sys.exit(1)
     
-    focus_list = list(focus) if focus else ['all']
+    focus_list = focus if focus else ['all']
     
     # TODO: Implement multi-repository scanning
     console.print("[yellow]Multi-repository scanning not yet implemented")
@@ -249,18 +223,8 @@ def scan_multi_command(repo_paths, output, focus, verbose):
         sys.exit(1)
 
 
-@cli.command('compare')
-@click.argument('repo_path1', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.argument('repo_path2', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-@click.option('--output', '-o', default='comparison.md', help='Output file path')
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 def compare_command(repo_path1, repo_path2, output, verbose):
-    """
-    Compare two repositories and generate a comparison document.
-    
-    REPO_PATH1 is the path to the first repository.
-    REPO_PATH2 is the path to the second repository.
-    """
+    """Compare two repositories and generate a comparison document."""
     if verbose:
         logging.getLogger("repo-analyzer").setLevel(logging.DEBUG)
     
@@ -275,5 +239,65 @@ def compare_command(repo_path1, repo_path2, output, verbose):
         sys.exit(1)
 
 
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description='Repository Analyzer CLI - Generate comprehensive documentation from code repositories.'
+    )
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    
+    # Scan command
+    scan_parser = subparsers.add_parser('scan', help='Scan a single repository and generate documentation')
+    scan_parser.add_argument('repo_path', help='Path to the repository to analyze')
+    scan_parser.add_argument('-o', '--output', default='analysis.md', help='Output file path')
+    scan_parser.add_argument('-f', '--focus', action='append', 
+                           help='Focus on specific analysis types (structure, dependencies, api)')
+    scan_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
+    
+    # Scan-multi command
+    scan_multi_parser = subparsers.add_parser('scan-multi', 
+                                             help='Scan multiple repositories and generate combined documentation')
+    scan_multi_parser.add_argument('repo_paths', nargs='+', help='Paths to the repositories to analyze')
+    scan_multi_parser.add_argument('-o', '--output', default='combined_analysis.md', help='Output file path')
+    scan_multi_parser.add_argument('-f', '--focus', action='append',
+                                  help='Focus on specific analysis types (structure, dependencies, api)')
+    scan_multi_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
+    
+    # Compare command
+    compare_parser = subparsers.add_parser('compare', 
+                                          help='Compare two repositories and generate a comparison document')
+    compare_parser.add_argument('repo_path1', help='Path to the first repository')
+    compare_parser.add_argument('repo_path2', help='Path to the second repository')
+    compare_parser.add_argument('-o', '--output', default='comparison.md', help='Output file path')
+    compare_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose logging')
+    
+    args = parser.parse_args()
+    
+    if not args.command:
+        parser.print_help()
+        return
+    
+    # Validate repository paths exist
+    if args.command == 'scan':
+        if not os.path.exists(args.repo_path) or not os.path.isdir(args.repo_path):
+            console.print(f"[red]Error: Repository path '{args.repo_path}' does not exist or is not a directory")
+            sys.exit(1)
+        scan_command(args.repo_path, args.output, args.focus, args.verbose)
+    
+    elif args.command == 'scan-multi':
+        for repo_path in args.repo_paths:
+            if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
+                console.print(f"[red]Error: Repository path '{repo_path}' does not exist or is not a directory")
+                sys.exit(1)
+        scan_multi_command(args.repo_paths, args.output, args.focus, args.verbose)
+    
+    elif args.command == 'compare':
+        for repo_path in [args.repo_path1, args.repo_path2]:
+            if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
+                console.print(f"[red]Error: Repository path '{repo_path}' does not exist or is not a directory")
+                sys.exit(1)
+        compare_command(args.repo_path1, args.repo_path2, args.output, args.verbose)
+
+
 if __name__ == '__main__':
-    cli()
+    main()
