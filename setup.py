@@ -11,14 +11,10 @@ setup(
     package_dir={"": "."},
     include_package_data=True,
     install_requires=[
-        "click>=8.0.0",
-        "GitPython>=3.1.0",
-        "tree-sitter>=0.20.0",
         "pathspec>=0.9.0",
         "Pygments>=2.10.0",
         "markdown>=3.3.0",
         "PyYAML>=6.0.0",
-        "rich>=12.0.0",
     ],
     entry_points={
         "console_scripts": [
