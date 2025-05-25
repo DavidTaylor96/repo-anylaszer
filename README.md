@@ -35,6 +35,20 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Troubleshooting Virtual Environment
+
+If you get an error that the virtual environment already exists:
+
+```bash
+# Remove the existing virtual environment
+rm -rf venv
+
+# Then create a new one
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
 ### Quick Setup Script
 
 For convenience, you can use the setup script:
