@@ -40,21 +40,58 @@ python3 -m pip install --upgrade pip
 
 # Install dependencies with better error handling
 echo "📥 Installing dependencies..."
+
+# Function to try alternative installation methods
+install_with_alternatives() {
+    local package=$1
+    echo "Installing: $package"
+    
+    # Try pip with different options
+    if pip install "$package"; then
+        return 0
+    elif pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org "$package"; then
+        echo "✅ Installed $package with trusted hosts"
+        return 0
+    elif pip install --user "$package"; then
+        echo "✅ Installed $package in user directory"
+        return 0
+    else
+        echo "❌ Failed to install $package via pip"
+        
+        # Try homebrew alternatives for common packages
+        case $package in
+            *PyYAML* | *pyyaml*)
+                if command -v brew &> /dev/null && brew install libyaml && pip install PyYAML; then
+                    echo "✅ Installed PyYAML with homebrew libyaml"
+                    return 0
+                fi
+                ;;
+        esac
+        
+        echo "❌ All installation methods failed for $package"
+        return 1
+    fi
+}
+
+# Try installing all requirements first
 if ! pip install -r requirements.txt; then
     echo "❌ Failed to install requirements from requirements.txt"
-    echo "Trying to install dependencies individually..."
+    echo "Trying alternative installation methods..."
     
-    # Try installing each dependency individually
-    while read -r requirement; do
-        if [[ $requirement == \#* ]] || [[ -z "$requirement" ]]; then
-            continue
-        fi
-        echo "Installing: $requirement"
-        if ! pip install "$requirement"; then
-            echo "❌ Failed to install $requirement"
-            echo "You may need to install this manually or check your internet connection"
-        fi
-    done < requirements.txt
+    # Try with trusted hosts
+    if pip install --trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org -r requirements.txt; then
+        echo "✅ Installed requirements with trusted hosts"
+    else
+        echo "Trying to install dependencies individually..."
+        
+        # Try installing each dependency individually with alternatives
+        while read -r requirement; do
+            if [[ $requirement == \#* ]] || [[ -z "$requirement" ]]; then
+                continue
+            fi
+            install_with_alternatives "$requirement"
+        done < requirements.txt
+    fi
 fi
 
 echo "📦 Installing package in development mode..."
