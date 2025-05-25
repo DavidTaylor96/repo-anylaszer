@@ -1,7 +1,6 @@
 import os
 import pathspec
 from typing import List, Dict, Any, Optional
-from git import Repo
 import logging
 
 logger = logging.getLogger(__name__)
@@ -152,15 +151,7 @@ class RepoScanner:
         last_modified = None
         author = None
         
-        if self.is_git_repo:
-            try:
-                repo = Repo(self.repo_path)
-                for commit, lines in repo.blame('HEAD', file_path):
-                    if not last_modified or commit.committed_date > last_modified:
-                        last_modified = commit.committed_date
-                        author = f"{commit.author.name} <{commit.author.email}>"
-            except Exception as e:
-                logger.warning(f"Could not get git info for {file_path}: {e}")
+        # Git metadata removed to avoid dependency issues
         
         return {
             'path': rel_path,
