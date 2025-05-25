@@ -23,9 +23,12 @@ fi
 echo "🔌 Activating virtual environment..."
 source venv/bin/activate
 
-# Install dependencies
+# Install dependencies and package in development mode
 echo "📥 Installing dependencies..."
 pip install -r requirements.txt
+
+echo "📦 Installing package in development mode..."
+pip install -e .
 
 echo "✅ Setup complete!"
 echo ""
