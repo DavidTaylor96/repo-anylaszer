@@ -5,9 +5,6 @@ import argparse
 import logging
 import sys
 from typing import Dict, List, Any, Optional
-from rich.console import Console
-from rich.logging import RichHandler
-from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from src.repo_scanner import RepoScanner
 from src.parsers.python_parser import PythonParser
@@ -21,13 +18,10 @@ from src.generators.document_generator import DocumentGenerator
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(message)s",
-    datefmt="[%X]",
-    handlers=[RichHandler(rich_tracebacks=True)]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
 logger = logging.getLogger("repo-analyzer")
-console = Console()
 
 class RepositoryAnalyzer:
     """
@@ -60,44 +54,40 @@ class RepositoryAnalyzer:
             True if analysis was successful, False otherwise
         """
         try:
-            with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=console
-            ) as progress:
-                # Scan repository
-                scan_task = progress.add_task("[green]Scanning repository...", total=None)
-                self._scan_repository()
-                progress.update(scan_task, completed=True)
-                
-                # Parse files
-                parse_task = progress.add_task("[green]Parsing files...", total=len(self.file_data))
-                self._parse_files(progress, parse_task)
-                
-                # Analyze structure
-                if 'all' in self.focus or 'structure' in self.focus:
-                    structure_task = progress.add_task("[green]Analyzing structure...", total=None)
-                    self._analyze_structure()
-                    progress.update(structure_task, completed=True)
-                
-                # Analyze dependencies
-                if 'all' in self.focus or 'dependencies' in self.focus:
-                    deps_task = progress.add_task("[green]Analyzing dependencies...", total=None)
-                    self._analyze_dependencies()
-                    progress.update(deps_task, completed=True)
-                
-                # Analyze APIs
-                if 'all' in self.focus or 'api' in self.focus:
-                    api_task = progress.add_task("[green]Analyzing APIs...", total=None)
-                    self._analyze_apis()
-                    progress.update(api_task, completed=True)
-                
-                # Generate document
-                doc_task = progress.add_task("[green]Generating documentation...", total=None)
-                self._generate_document()
-                progress.update(doc_task, completed=True)
+            # Scan repository
+            print("Scanning repository...")
+            self._scan_repository()
+            print("✓ Repository scan complete")
             
-            console.print(f"[green]Analysis complete! Documentation saved to: {self.output_path}")
+            # Parse files
+            print("Parsing files...")
+            self._parse_files()
+            print("✓ File parsing complete")
+            
+            # Analyze structure
+            if 'all' in self.focus or 'structure' in self.focus:
+                print("Analyzing structure...")
+                self._analyze_structure()
+                print("✓ Structure analysis complete")
+            
+            # Analyze dependencies
+            if 'all' in self.focus or 'dependencies' in self.focus:
+                print("Analyzing dependencies...")
+                self._analyze_dependencies()
+                print("✓ Dependency analysis complete")
+            
+            # Analyze APIs
+            if 'all' in self.focus or 'api' in self.focus:
+                print("Analyzing APIs...")
+                self._analyze_apis()
+                print("✓ API analysis complete")
+            
+            # Generate document
+            print("Generating documentation...")
+            self._generate_document()
+            print("✓ Documentation generation complete")
+            
+            print(f"Analysis complete! Documentation saved to: {self.output_path}")
             return True
             
         except Exception as e:
@@ -113,13 +103,9 @@ class RepositoryAnalyzer:
         self.file_data = self.scanner.scan()
         logger.info(f"Found {len(self.file_data)} files")
     
-    def _parse_files(self, progress, task_id) -> None:
+    def _parse_files(self) -> None:
         """
         Parse the content of each file.
-        
-        Args:
-            progress: Progress object for updating progress
-            task_id: Task ID for the progress bar
         """
         logger.info("Parsing files...")
         
@@ -140,10 +126,8 @@ class RepositoryAnalyzer:
                     self.parser_results[file_path] = parser.parse()
                 # Add more parsers as needed
                 
-                progress.update(task_id, advance=1)
             except Exception as e:
                 logger.warning(f"Error parsing {file_path}: {e}")
-                progress.update(task_id, advance=1)
         
         logger.info(f"Parsed {len(self.parser_results)} files")
     
@@ -207,14 +191,14 @@ def scan_multi_command(repo_paths, output, focus, verbose):
         logging.getLogger("repo-analyzer").setLevel(logging.DEBUG)
     
     if not repo_paths:
-        console.print("[red]Error: At least one repository path is required")
+        print("Error: At least one repository path is required")
         sys.exit(1)
     
     focus_list = focus if focus else ['all']
     
     # TODO: Implement multi-repository scanning
-    console.print("[yellow]Multi-repository scanning not yet implemented")
-    console.print("[yellow]Falling back to analyzing the first repository")
+    print("Multi-repository scanning not yet implemented")
+    print("Falling back to analyzing the first repository")
     
     analyzer = RepositoryAnalyzer(repo_paths[0], output, focus_list)
     success = analyzer.analyze()
@@ -229,8 +213,8 @@ def compare_command(repo_path1, repo_path2, output, verbose):
         logging.getLogger("repo-analyzer").setLevel(logging.DEBUG)
     
     # TODO: Implement repository comparison
-    console.print("[yellow]Repository comparison not yet implemented")
-    console.print("[yellow]Falling back to analyzing the first repository")
+    print("Repository comparison not yet implemented")
+    print("Falling back to analyzing the first repository")
     
     analyzer = RepositoryAnalyzer(repo_path1, output)
     success = analyzer.analyze()
@@ -280,21 +264,21 @@ def main():
     # Validate repository paths exist
     if args.command == 'scan':
         if not os.path.exists(args.repo_path) or not os.path.isdir(args.repo_path):
-            console.print(f"[red]Error: Repository path '{args.repo_path}' does not exist or is not a directory")
+            print(f"Error: Repository path '{args.repo_path}' does not exist or is not a directory")
             sys.exit(1)
         scan_command(args.repo_path, args.output, args.focus, args.verbose)
     
     elif args.command == 'scan-multi':
         for repo_path in args.repo_paths:
             if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
-                console.print(f"[red]Error: Repository path '{repo_path}' does not exist or is not a directory")
+                print(f"Error: Repository path '{repo_path}' does not exist or is not a directory")
                 sys.exit(1)
         scan_multi_command(args.repo_paths, args.output, args.focus, args.verbose)
     
     elif args.command == 'compare':
         for repo_path in [args.repo_path1, args.repo_path2]:
             if not os.path.exists(repo_path) or not os.path.isdir(repo_path):
-                console.print(f"[red]Error: Repository path '{repo_path}' does not exist or is not a directory")
+                print(f"Error: Repository path '{repo_path}' does not exist or is not a directory")
                 sys.exit(1)
         compare_command(args.repo_path1, args.repo_path2, args.output, args.verbose)
 
