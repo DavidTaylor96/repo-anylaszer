@@ -13,6 +13,11 @@ A tool that scans code repositories and generates comprehensive documentation th
 
 ## Installation
 
+### Prerequisites
+
+- Python 3.8 or higher
+- Git
+
 ### From Source
 
 ```bash
@@ -21,11 +26,26 @@ git clone https://github.com/yourusername/repo-analyzer.git
 cd repo-analyzer
 
 # Create a virtual environment
-python -m venv venv
+python3 -m venv venv
+
+# Activate the virtual environment
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
+
+### Quick Setup Script
+
+For convenience, you can use the setup script:
+
+```bash
+# Make the script executable and run it
+chmod +x setup.sh
+./setup.sh
+
+# Or run the Python script directly
+python3 analyze.py /path/to/repository
 ```
 
 ## Usage
