@@ -24,15 +24,8 @@ cd repo-analyzer
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# Install the package in development mode
-pip install -e .
-```
-
-### As a Python Package
-
-```bash
-# Install directly from the repository
-pip install git+https://github.com/yourusername/repo-analyzer.git
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ## Usage
@@ -40,17 +33,17 @@ pip install git+https://github.com/yourusername/repo-analyzer.git
 ### Command Line Interface
 
 ```bash
+# Activate the virtual environment first
+source venv/bin/activate
+
 # Scan a single repository
-repo-analyzer scan /path/to/repo --output analysis.md
+python3 run.py scan /path/to/repo --output analysis.md
 
-# Scan with specific focus
-repo-analyzer scan /path/to/repo --focus api --focus dependencies
-
-# Scan multiple repos (coming soon)
-repo-analyzer scan-multi /path/to/frontend /path/to/backend --output combined.md
+# Example: Scan a repository on your desktop
+python3 run.py scan /Users/username/Desktop/my-project --output analysis.md
 
 # View all available commands
-repo-analyzer --help
+python3 run.py --help
 ```
 
 ### Programmatic Usage
