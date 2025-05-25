@@ -1,106 +1,101 @@
-# Code Repository Analyzer
+# Repository Analyzer - TypeScript Edition
 
-A tool that scans code repositories and generates comprehensive documentation that can be uploaded to Claude Projects for intelligent Q&A about codebases.
+A powerful tool that scans code repositories and generates comprehensive documentation for Claude Projects. Now written in TypeScript with zero external dependencies!
 
 ## Features
 
-- Scans Git repositories and extracts structural information
-- Supports multiple programming languages (Python, JavaScript, TypeScript)
-- Analyzes code dependencies and relationships
-- Identifies APIs, data models, and integration points
-- Generates structured markdown documentation
-- Creates outputs optimized for Claude Projects
+- 🔍 **Multi-language support**: TypeScript, JavaScript, Python
+- 📊 **Comprehensive analysis**: Structure, dependencies, APIs
+- 📄 **Rich documentation**: Markdown reports with detailed insights
+- 🚀 **Zero dependencies**: Pure Node.js/TypeScript implementation
+- ⚡ **Fast scanning**: Efficient file parsing and analysis
+- 🎯 **Focused analysis**: Choose what to analyze
 
-## Installation
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- Git
+- Node.js 16+ 
+- TypeScript (for development)
 
-### From Source
+### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/repo-analyzer.git
+# Clone or download the repository
 cd repo-analyzer
 
-# Create a virtual environment
-python3 -m venv venv
+# Install TypeScript (dev dependency only)
+npm install
 
-# Activate the virtual environment
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Build the project
+npm run build
 
-# Install dependencies
-pip install -r requirements.txt
+# Make executable (optional)
+chmod +x dist/main.js
 ```
 
-### Troubleshooting Virtual Environment
-
-If you get an error that the virtual environment already exists:
+### Usage
 
 ```bash
-# Remove the existing virtual environment
-rm -rf venv
+# Basic analysis
+node dist/main.js scan /path/to/repository
 
-# Then create a new one
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
+# With custom output
+node dist/main.js scan /path/to/repository -o my-analysis.md
+
+# Focus on specific analysis
+node dist/main.js scan /path/to/repository --focus api -v
+
+# Show help
+node dist/main.js --help
 ```
 
-### Quick Setup Script
+## Command Line Options
 
-For convenience, you can use the setup script:
+```
+USAGE:
+  repo-analyzer scan <repository-path> [options]
 
-```bash
-# Make the script executable and run it
-chmod +x setup.sh
-./setup.sh
+OPTIONS:
+  -o, --output <file>     Output file path (default: analysis.md)
+  -f, --focus <type>      Focus analysis (structure|dependencies|api|all)
+  -v, --verbose          Enable verbose logging
+  -h, --help             Show this help message
 
-# Or run the Python script directly
-python3 analyze.py /path/to/repository
+EXAMPLES:
+  repo-analyzer scan ./my-project
+  repo-analyzer scan ./my-project -o report.md -f api -v
+  repo-analyzer scan ./my-project --focus dependencies
 ```
 
-## Usage
+## Analysis Types
 
-### Command Line Interface
+### Structure Analysis
+- Directory tree visualization
+- File count by language
+- Repository statistics
+- File size analysis
 
-```bash
-# Activate the virtual environment first
-source venv/bin/activate
+### Dependency Analysis  
+- Internal file dependencies
+- External package dependencies
+- Dependency graph generation
+- Circular dependency detection
 
-# Scan a single repository
-python3 run.py scan /path/to/repo --output analysis.md
+### API Analysis
+- Public function discovery
+- Class method extraction
+- API endpoint detection (Express, FastAPI, Flask)
+- Documentation parsing
 
-# Example: Scan a repository on your desktop
-python3 run.py scan /Users/username/Desktop/my-project --output analysis.md
+## Migration from Python
 
-# View all available commands
-python3 run.py --help
-```
+This TypeScript version replaces the previous Python implementation and offers:
 
-### Programmatic Usage
-
-```python
-from src.repo_scanner import RepoScanner
-from src.analyzers.structure_analyzer import StructureAnalyzer
-from src.generators.document_generator import DocumentGenerator
-
-# Scan repository
-scanner = RepoScanner("/path/to/repo")
-file_data = scanner.scan()
-
-# Analyze structure
-structure_analyzer = StructureAnalyzer("/path/to/repo", file_data)
-analysis_results = {"structure_analysis": structure_analyzer.analyze()}
-
-# Generate documentation
-generator = DocumentGenerator("/path/to/repo", analysis_results)
-generator.generate("analysis.md")
-```
-
-See the `examples` directory for more detailed examples.
+- ✅ **No pip dependencies** - Works on restricted networks
+- ✅ **Faster execution** - Native Node.js performance  
+- ✅ **Better parsing** - More accurate code analysis
+- ✅ **Cross-platform** - Works on all Node.js supported platforms
 
 ## Output
 
