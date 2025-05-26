@@ -1,5 +1,5 @@
 import { BaseParser } from './base-parser';
-import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo, InterfaceInfo, TypeAliasInfo, ComponentInfo, ParameterInfo, JSDocInfo, PropertyInfo, ImportItem, DatabaseSchemaInfo, CodePatternInfo, VectorEmbeddingInfo } from '../types';
+import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo, InterfaceInfo, TypeAliasInfo, ComponentInfo, ComponentStylingInfo, ParameterInfo, JSDocInfo, PropertyInfo, ImportItem, DatabaseSchemaInfo, CodePatternInfo, VectorEmbeddingInfo } from '../types';
 
 export class TypeScriptParser extends BaseParser {
   public parse(): ParseResult {
@@ -437,6 +437,7 @@ export class TypeScriptParser extends BaseParser {
           const props = this.extractComponentProps(propsParam, lineStart, lineEnd);
           const hooks = this.extractReactHooks(lineStart, lineEnd);
           const jsx = this.containsJSX(lineStart, lineEnd);
+          const styling = this.extractComponentStyling(lineStart, lineEnd);
 
           components.push({
             name,
@@ -445,7 +446,8 @@ export class TypeScriptParser extends BaseParser {
             hasJSX: jsx,
             lineStart,
             lineEnd,
-            docstring
+            docstring,
+            styling
           });
           break;
         }
@@ -797,5 +799,174 @@ export class TypeScriptParser extends BaseParser {
     if (line.includes('private')) return 'private';
     if (line.includes('protected')) return 'protected';
     return 'public';
+  }
+
+  private extractComponentStyling(startLine: number, endLine: number): ComponentStylingInfo {
+    const styling: ComponentStylingInfo = {
+      type: 'none',
+      imports: [],
+      classNames: [],
+      styledComponents: [],
+      inlineStyles: []
+    };
+
+    // Check for styling imports
+    const allImports = this.parseImports();
+    const stylingImports = allImports.filter(imp => 
+      imp.module.includes('styled-components') ||
+      imp.module.includes('@emotion') ||
+      imp.module.includes('.module.css') ||
+      imp.module.includes('.module.scss') ||
+      imp.module.includes('.scss') ||
+      imp.module.includes('.css')
+    );
+
+    styling.imports = stylingImports.map(imp => imp.module);
+
+    // Get component content
+    const componentContent = this.lines.slice(startLine - 1, endLine - 1).join('\n');
+
+    // Detect styling type and extract relevant information
+    if (stylingImports.some(imp => imp.module.includes('styled-components') || imp.module.includes('@emotion'))) {
+      styling.type = 'styled-components';
+      styling.styledComponents = this.extractStyledComponents(componentContent);
+    } else if (stylingImports.some(imp => imp.module.includes('.module.'))) {
+      styling.type = 'css-modules';
+      styling.classNames = this.extractCSSModuleClasses(componentContent);
+    } else if (this.containsTailwindClasses(componentContent)) {
+      styling.type = 'tailwind';
+      styling.classNames = this.extractTailwindClasses(componentContent);
+    } else if (stylingImports.some(imp => imp.module.includes('.scss'))) {
+      styling.type = 'scss';
+      styling.classNames = this.extractRegularClasses(componentContent);
+    } else if (this.containsCSSInJS(componentContent)) {
+      styling.type = 'css-in-js';
+      styling.classNames = this.extractCSSInJSClasses(componentContent);
+    } else if (this.containsInlineStyles(componentContent)) {
+      styling.type = 'inline-styles';
+      styling.inlineStyles = this.extractInlineStyles(componentContent);
+    } else if (styling.imports.length > 0) {
+      styling.type = 'scss'; // Default fallback for CSS imports
+      styling.classNames = this.extractRegularClasses(componentContent);
+    }
+
+    return styling;
+  }
+
+  private extractStyledComponents(content: string): string[] {
+    const styledComponents: string[] = [];
+    const patterns = [
+      /const\s+(\w+)\s*=\s*styled\.[a-zA-Z]+`/g,
+      /const\s+(\w+)\s*=\s*styled\([^)]+\)`/g
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        styledComponents.push(match[1]);
+      }
+    }
+
+    return styledComponents;
+  }
+
+  private extractCSSModuleClasses(content: string): string[] {
+    const classes: string[] = [];
+    const pattern = /className\s*=\s*\{?([^}]+\.)?(\w+)\}?/g;
+    
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      if (match[1]) { // CSS module style (styles.className)
+        classes.push(match[2]);
+      }
+    }
+
+    return [...new Set(classes)];
+  }
+
+  private containsTailwindClasses(content: string): boolean {
+    const tailwindPattern = /className\s*=\s*["`'][^"`']*\b(bg-|text-|p-|m-|w-|h-|flex|grid|border-)[^"`']*["`']/;
+    return tailwindPattern.test(content);
+  }
+
+  private extractTailwindClasses(content: string): string[] {
+    const classes: string[] = [];
+    const pattern = /className\s*=\s*["`']([^"`']*)["`']/g;
+    
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const classString = match[1];
+      const tailwindClasses = classString.split(/\s+/).filter(cls => 
+        /^(bg-|text-|p-|m-|w-|h-|flex|grid|border-|rounded|shadow|hover:|focus:|sm:|md:|lg:|xl:)/.test(cls)
+      );
+      classes.push(...tailwindClasses);
+    }
+
+    return [...new Set(classes)];
+  }
+
+  private extractRegularClasses(content: string): string[] {
+    const classes: string[] = [];
+    const pattern = /className\s*=\s*["`']([^"`']*)["`']/g;
+    
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const classNames = match[1].split(/\s+/).filter(cls => cls.trim());
+      classes.push(...classNames);
+    }
+
+    return [...new Set(classes)];
+  }
+
+  private containsCSSInJS(content: string): boolean {
+    return /css`|css\s*\(/.test(content);
+  }
+
+  private extractCSSInJSClasses(content: string): string[] {
+    const classes: string[] = [];
+    const patterns = [
+      /css`([^`]*)`/g,
+      /css\s*\(([^)]*)\)/g
+    ];
+
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        // Extract CSS property names from CSS-in-JS
+        const cssContent = match[1];
+        const properties = cssContent.match(/(\w+(?:-\w+)*)\s*:/g);
+        if (properties) {
+          classes.push(...properties.map(prop => prop.replace(':', '')));
+        }
+      }
+    }
+
+    return [...new Set(classes)];
+  }
+
+  private containsInlineStyles(content: string): boolean {
+    return /style\s*=\s*\{/.test(content);
+  }
+
+  private extractInlineStyles(content: string): Array<{element: string, properties: string[]}> {
+    const inlineStyles: Array<{element: string, properties: string[]}> = [];
+    const pattern = /<(\w+)[^>]*style\s*=\s*\{([^}]+)\}/g;
+    
+    let match;
+    while ((match = pattern.exec(content)) !== null) {
+      const element = match[1];
+      const styleContent = match[2];
+      
+      // Extract CSS properties from inline styles
+      const properties = styleContent.match(/(\w+(?:-\w+)*)\s*:/g);
+      if (properties) {
+        inlineStyles.push({
+          element,
+          properties: properties.map(prop => prop.replace(':', ''))
+        });
+      }
+    }
+
+    return inlineStyles;
   }
 }

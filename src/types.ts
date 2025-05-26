@@ -203,6 +203,15 @@ export interface ComponentInfo {
   lineStart: number;
   lineEnd: number;
   docstring?: string;
+  styling?: ComponentStylingInfo;
+}
+
+export interface ComponentStylingInfo {
+  type: 'css-modules' | 'styled-components' | 'tailwind' | 'css-in-js' | 'scss' | 'inline-styles' | 'none';
+  imports: string[];
+  classNames: string[];
+  styledComponents: string[];
+  inlineStyles: Array<{element: string, properties: string[]}>;
 }
 
 export interface ApiSchemaInfo {
@@ -335,7 +344,7 @@ export interface SchemaIndexInfo {
 
 export interface CodePatternInfo {
   pattern: string;
-  type: 'architectural' | 'naming' | 'design' | 'anti-pattern';
+  type: 'architectural' | 'naming' | 'design' | 'anti-pattern' | 'styling' | 'framework' | 'data-fetching' | 'routing' | 'testing' | 'react-pattern' | 'build-tool' | 'messaging' | 'cloud-service' | 'infrastructure' | 'security' | 'configuration';
   description: string;
   files: string[];
   examples: Array<{file: string, line: number, code: string}>;
