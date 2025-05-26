@@ -9,6 +9,11 @@ import { PythonParser } from './parsers/python-parser';
 import { StructureAnalyzer } from './analyzers/structure-analyzer';
 import { DependencyAnalyzer } from './analyzers/dependency-analyzer';
 import { ApiAnalyzer } from './analyzers/api-analyzer';
+import { StateAnalyzer } from './analyzers/state-analyzer';
+import { DatabaseAnalyzer } from './analyzers/database-analyzer';
+import { CodePatternsAnalyzer } from './analyzers/code-patterns-analyzer';
+import { VectorAnalyzer } from './analyzers/vector-analyzer';
+import { ImportExportAnalyzer } from './analyzers/import-export-analyzer';
 import { DocumentGenerator } from './document-generator';
 import { AnalysisResults, AnalysisFocus, ParseResult } from './types';
 
@@ -93,6 +98,50 @@ class RepositoryAnalyzer {
         this.log('✅ API analysis complete');
       }
 
+      // Always run state analysis for TypeScript/React projects
+      const hasReactFiles = fileData.some(f => 
+        f.language === 'typescript' || f.language === 'javascript'
+      );
+      
+      if (hasReactFiles) {
+        this.log('⚛️  Analyzing state management...');
+        const stateAnalyzer = new StateAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.stateAnalysis = stateAnalyzer.analyze();
+        this.log('✅ State analysis complete');
+      }
+
+      // Database analysis
+      if (this.shouldRunAnalysis('database' as AnalysisFocus) || this.shouldRunAnalysis('all')) {
+        this.log('🗄️  Analyzing database schemas...');
+        const databaseAnalyzer = new DatabaseAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.databaseAnalysis = databaseAnalyzer.analyze();
+        this.log('✅ Database analysis complete');
+      }
+
+      // Code patterns analysis
+      if (this.shouldRunAnalysis('patterns' as AnalysisFocus) || this.shouldRunAnalysis('all')) {
+        this.log('🔍 Analyzing code patterns...');
+        const patternsAnalyzer = new CodePatternsAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.codePatterns = patternsAnalyzer.analyze();
+        this.log('✅ Code patterns analysis complete');
+      }
+
+      // Import/Export analysis
+      if (this.shouldRunAnalysis('dependencies') || this.shouldRunAnalysis('all')) {
+        this.log('🔗 Analyzing import/export relationships...');
+        const importExportAnalyzer = new ImportExportAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.importExportGraph = importExportAnalyzer.analyze();
+        this.log('✅ Import/export analysis complete');
+      }
+
+      // Vector embeddings (optional)
+      if (this.shouldRunAnalysis('vector' as AnalysisFocus) || this.shouldRunAnalysis('all')) {
+        this.log('🧮 Creating vector embeddings...');
+        const vectorAnalyzer = new VectorAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.vectorEmbeddings = await vectorAnalyzer.analyze();
+        this.log('✅ Vector embeddings created');
+      }
+
       // Generate documentation
       this.log('📄 Generating documentation...');
       const generator = new DocumentGenerator(this.repoPath, analysisResults);
@@ -144,7 +193,7 @@ COMMANDS:
 
 OPTIONS:
   -o, --output <file>     Output file path (default: analysis.md)
-  -f, --focus <type>      Focus analysis (structure|dependencies|api|all)
+  -f, --focus <type>      Focus analysis (structure|dependencies|api|database|patterns|vector|all)
   -v, --verbose          Enable verbose logging
   -h, --help             Show this help message
 
@@ -207,8 +256,8 @@ function parseArgs(): any {
       config.output = args[++i];
     } else if (arg === '-f' || arg === '--focus') {
       const focusType = args[++i] as AnalysisFocus;
-      if (!['structure', 'dependencies', 'api', 'all'].includes(focusType)) {
-        console.error('❌ Invalid focus type. Use: structure, dependencies, api, or all');
+      if (!['structure', 'dependencies', 'api', 'database', 'patterns', 'vector', 'all'].includes(focusType)) {
+        console.error('❌ Invalid focus type. Use: structure, dependencies, api, database, patterns, vector, or all');
         process.exit(1);
       }
       config.focus = [focusType];

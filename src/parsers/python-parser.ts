@@ -1,5 +1,5 @@
 import { BaseParser } from './base-parser';
-import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo } from '../types';
+import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo, ParameterInfo, PropertyInfo, ImportItem } from '../types';
 
 export class PythonParser extends BaseParser {
   public parse(): ParseResult {
@@ -32,7 +32,7 @@ export class PythonParser extends BaseParser {
 
         functions.push({
           name,
-          parameters: params,
+          parameters: this.convertToParameterInfo(params),
           returnType,
           isAsync,
           lineStart,
@@ -67,7 +67,7 @@ export class PythonParser extends BaseParser {
         classes.push({
           name,
           methods,
-          properties,
+          properties: this.convertToPropertyInfo(properties),
           extends: inheritance[0],
           implements: inheritance.slice(1),
           lineStart,
@@ -107,7 +107,7 @@ export class PythonParser extends BaseParser {
             
             imports.push({
               module,
-              items,
+              items: this.convertToImportItems(items),
               isDefault: false
             });
           } else if (line.includes(' as ')) {
@@ -116,16 +116,15 @@ export class PythonParser extends BaseParser {
             const alias = match[2];
             imports.push({
               module,
-              items: [module],
-              isDefault: true,
-              alias
+              items: [{name: module, alias}],
+              isDefault: true
             });
           } else {
             // import module
             const module = match[1];
             imports.push({
               module,
-              items: [module],
+              items: [{name: module}],
               isDefault: true
             });
           }
@@ -250,7 +249,7 @@ export class PythonParser extends BaseParser {
 
         methods.push({
           name,
-          parameters: params,
+          parameters: this.convertToParameterInfo(params),
           returnType,
           isAsync,
           lineStart,
@@ -316,5 +315,26 @@ export class PythonParser extends BaseParser {
     
     // If indented, it's likely inside a block
     return indent > 0;
+  }
+
+  private convertToParameterInfo(params: string[]): ParameterInfo[] {
+    return params.map(param => ({
+      name: param,
+      optional: false,
+      destructured: false
+    }));
+  }
+
+  private convertToPropertyInfo(props: string[]): PropertyInfo[] {
+    return props.map(prop => ({
+      name: prop,
+      visibility: 'public' as const
+    }));
+  }
+
+  private convertToImportItems(items: string[]): ImportItem[] {
+    return items.map(item => ({
+      name: item
+    }));
   }
 }

@@ -1,5 +1,5 @@
 import { BaseParser } from './base-parser';
-import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo } from '../types';
+import { ParseResult, FunctionInfo, ClassInfo, ImportInfo, ExportInfo, ConstantInfo, ParameterInfo, PropertyInfo, ImportItem } from '../types';
 
 export class JavaScriptParser extends BaseParser {
   public parse(): ParseResult {
@@ -31,7 +31,7 @@ export class JavaScriptParser extends BaseParser {
         const match = line.match(pattern);
         if (match) {
           const name = match[1];
-          const params = this.parseParameters(match[2] || '');
+          const params = this.convertToParameterInfo(this.parseParameters(match[2] || ''));
           const isAsync = line.includes('async');
           const lineStart = i + 1;
           const lineEnd = this.findFunctionEnd(i);
@@ -70,7 +70,7 @@ export class JavaScriptParser extends BaseParser {
         const docstring = this.extractDocstring(Math.max(0, i - 3), i);
 
         const methods = this.parseClassMethods(lineStart, lineEnd);
-        const properties = this.parseClassProperties(lineStart, lineEnd);
+        const properties = this.convertToPropertyInfo(this.parseClassProperties(lineStart, lineEnd));
 
         classes.push({
           name,
@@ -104,7 +104,7 @@ export class JavaScriptParser extends BaseParser {
         if (match) {
           if (pattern.source.includes('require')) {
             // Handle require syntax
-            const items = match[1] ? match[1].split(',').map(s => s.trim()) : [match[2]];
+            const items = match[1] ? this.convertToImportItems(match[1].split(',').map(s => s.trim())) : [{name: match[2] || ''}];
             const module = match[3];
             imports.push({
               module,
@@ -113,16 +113,17 @@ export class JavaScriptParser extends BaseParser {
             });
           } else {
             // Handle import syntax
-            let items: string[] = [];
+            let items: ImportItem[] = [];
             let isDefault = false;
             let module = match[2] || match[3];
 
             if (match[0].includes('* as')) {
-              items = [match[1]];
+              items = [{name: match[1]}];
             } else if (match[0].includes('{')) {
-              items = (match[1] || match[2]).split(',').map(s => s.trim());
+              const itemsString = match[1] || match[2];
+              items = this.convertToImportItems(itemsString.split(',').map(s => s.trim()));
             } else {
-              items = [match[1]];
+              items = [{name: match[1]}];
               isDefault = true;
             }
 
@@ -261,7 +262,7 @@ export class JavaScriptParser extends BaseParser {
         const match = line.match(pattern);
         if (match) {
           const name = match[1];
-          const params = this.parseParameters(match[2] || '');
+          const params = this.convertToParameterInfo(this.parseParameters(match[2] || ''));
           const isAsync = line.includes('async');
           const lineStart = i + 1;
           const lineEnd = this.findFunctionEnd(i);
@@ -305,5 +306,27 @@ export class JavaScriptParser extends BaseParser {
     }
 
     return properties;
+  }
+
+
+  private convertToParameterInfo(params: string[]): ParameterInfo[] {
+    return params.map(param => ({
+      name: param,
+      optional: false,
+      destructured: false
+    }));
+  }
+
+  private convertToPropertyInfo(props: string[]): PropertyInfo[] {
+    return props.map(prop => ({
+      name: prop,
+      visibility: 'public' as const
+    }));
+  }
+
+  private convertToImportItems(items: string[]): ImportItem[] {
+    return items.map(item => ({
+      name: item
+    }));
   }
 }

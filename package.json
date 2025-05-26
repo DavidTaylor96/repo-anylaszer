@@ -10,14 +10,24 @@
     "build": "tsc",
     "start": "node dist/main.js",
     "dev": "ts-node src/main.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "mcp": "node dist/mcp-server.js"
   },
-  "keywords": ["repository", "analyzer", "documentation", "typescript"],
+  "keywords": [
+    "repository",
+    "analyzer",
+    "documentation",
+    "typescript"
+  ],
   "author": "Your Name",
   "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "chromadb": "^1.5.0"
+  },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
   },
   "engines": {
     "node": ">=16.0.0"

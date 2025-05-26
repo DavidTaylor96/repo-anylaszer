@@ -1,6 +1,6 @@
 # Repository Analyzer - TypeScript Edition
 
-A powerful tool that scans code repositories and generates comprehensive documentation for Claude Projects. Now written in TypeScript with zero external dependencies!
+A powerful tool that scans code repositories and generates comprehensive documentation for Claude Projects. Now written in TypeScript with zero external dependencies and MCP (Model Context Protocol) support!
 
 ## Features
 
@@ -10,6 +10,7 @@ A powerful tool that scans code repositories and generates comprehensive documen
 - 🚀 **Zero dependencies**: Pure Node.js/TypeScript implementation
 - ⚡ **Fast scanning**: Efficient file parsing and analysis
 - 🎯 **Focused analysis**: Choose what to analyze
+- 🤖 **MCP Integration**: Connect to AI chatbots via Model Context Protocol
 
 ## Quick Start
 
@@ -113,6 +114,77 @@ This document is optimized for use with Claude Projects, allowing you to:
 2. Ask questions about the codebase
 3. Get intelligent responses based on the document content
 
+## MCP Integration
+
+The Repository Analyzer includes a complete MCP (Model Context Protocol) server that allows AI chatbots and applications to analyze repositories in real-time.
+
+### MCP Server Features
+
+The MCP server provides these tools for AI integration:
+
+- **`analyze_repository`** - Complete codebase analysis with configurable focus areas
+- **`search_codebase`** - Find specific functions, classes, or patterns 
+- **`get_code_structure`** - Get structure of specific components
+- **`suggest_implementation`** - AI-powered implementation suggestions based on existing patterns
+
+### Starting the MCP Server
+
+```bash
+# Build the project first
+npm run build
+
+# Start the MCP server
+node dist/mcp-server.js
+```
+
+### Integrating with Claude Desktop
+
+Add to your Claude Desktop config (`~/.anthropic/claude-app/claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "repo-analyzer": {
+      "command": "node",
+      "args": ["/path/to/repo-analyzer/dist/mcp-server.js"]
+    }
+  }
+}
+```
+
+### Custom Chatbot Integration
+
+```typescript
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+
+const client = new Client({ name: "my-chatbot", version: "1.0.0" });
+
+await client.connect(new StdioClientTransport({
+  command: "node",
+  args: ["dist/mcp-server.js"]
+}));
+
+// Analyze a repository
+const result = await client.callTool({
+  name: "analyze_repository",
+  arguments: { path: "/path/to/repo", focus: "api" }
+});
+
+// Search for specific code elements
+const searchResult = await client.callTool({
+  name: "search_codebase",
+  arguments: { query: "getUserById", type: "function" }
+});
+```
+
+### MCP Benefits
+
+- **Real-time analysis** - No need to generate static reports
+- **Interactive queries** - Ask specific questions about codebases
+- **Pattern recognition** - AI can suggest implementations based on existing code
+- **Standardized protocol** - Works with any MCP-compatible AI tool
+
 ## Project Structure
 
 ```
@@ -121,10 +193,12 @@ repo-analyzer/
 │   ├── parsers/       # Language-specific code parsers
 │   ├── analyzers/     # Code analysis engines
 │   ├── generators/    # Documentation generators
-│   └── main.py        # CLI entry point
+│   ├── main.ts        # CLI entry point
+│   └── mcp-server.ts  # MCP server for AI integration
 ├── tests/             # Test suite
 ├── examples/          # Usage examples
-├── requirements.txt   # Project dependencies
+├── dist/              # Compiled JavaScript
+├── package.json       # Project dependencies
 └── README.md          # This file
 ```
 
