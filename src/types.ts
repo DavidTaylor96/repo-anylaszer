@@ -32,6 +32,9 @@ export interface FunctionInfo {
   complexity?: number;
   visibility?: 'public' | 'private' | 'protected';
   isStatic?: boolean;
+  codeSnippet?: string;
+  calledBy?: string[];
+  calls?: string[];
 }
 
 export interface ClassInfo {
@@ -132,6 +135,15 @@ export interface AnalysisResults {
   codePatterns?: CodePatternsAnalysis;
   importExportGraph?: ImportExportGraph;
   vectorEmbeddings?: VectorEmbeddingInfo[];
+  semanticRelationships?: SemanticRelationshipsAnalysis;
+  implementationPatterns?: ImplementationPatternsAnalysis;
+  businessLogicContext?: BusinessLogicContextAnalysis;
+  qualityMetrics?: QualityMetricsAnalysis;
+  developmentGuidance?: DevelopmentGuidanceAnalysis;
+  architecturalInsights?: ArchitecturalInsightsAnalysis;
+  technologyIntegration?: TechnologyIntegrationAnalysis;
+  performanceAnalysis?: PerformanceAnalysisInfo;
+  migrationPaths?: MigrationPathsAnalysis;
 }
 
 export interface DatabaseAnalysisInfo {
@@ -373,4 +385,455 @@ export interface VectorEmbeddingInfo {
     language: string;
     [key: string]: any;
   };
+}
+
+// Enhanced Analysis Interfaces
+
+export interface SemanticRelationshipsAnalysis {
+  componentRelationships: ComponentRelationshipInfo[];
+  functionRelationships: FunctionRelationshipInfo[];
+  dataFlowMaps: DataFlowInfo[];
+  dependencyChains: DependencyChainInfo[];
+  patterns: RelationshipPatternInfo[];
+}
+
+export interface ComponentRelationshipInfo {
+  name: string;
+  file: string;
+  uses: string[];
+  usedBy: string[];
+  styledWith: string;
+  stateManagement: string[];
+  similarPatterns: string[];
+  props: Array<{name: string; type: string; source?: string}>;
+}
+
+export interface FunctionRelationshipInfo {
+  name: string;
+  file: string;
+  calls: string[];
+  calledBy: string[];
+  errorHandling: string[];
+  returnTypes: string[];
+  parameters: Array<{name: string; type: string; source?: string}>;
+}
+
+export interface DataFlowInfo {
+  from: string;
+  to: string;
+  type: 'props' | 'state' | 'context' | 'api' | 'function-call';
+  data: string[];
+  direction: 'unidirectional' | 'bidirectional';
+}
+
+export interface DependencyChainInfo {
+  chain: string[];
+  type: 'component' | 'function' | 'module';
+  depth: number;
+  isCircular: boolean;
+}
+
+export interface RelationshipPatternInfo {
+  pattern: string;
+  occurrences: number;
+  examples: Array<{file: string; line: number}>;
+  description: string;
+}
+
+export interface ImplementationPatternsAnalysis {
+  patterns: DetectedPatternInfo[];
+  antiPatterns: AntiPatternInfo[];
+  patternFrequency: Record<string, number>;
+  bestPractices: BestPracticeInfo[];
+  frameworkPatterns: FrameworkPatternInfo[];
+}
+
+export interface DetectedPatternInfo {
+  name: string;
+  type: 'architectural' | 'design' | 'behavioral' | 'creational' | 'structural';
+  description: string;
+  files: string[];
+  examples: Array<{file: string; line: number; code: string}>;
+  benefits: string[];
+  implementation: string;
+}
+
+export interface AntiPatternInfo {
+  name: string;
+  description: string;
+  files: string[];
+  severity: 'low' | 'medium' | 'high';
+  suggestion: string;
+  impact: string;
+}
+
+export interface BestPracticeInfo {
+  practice: string;
+  category: 'performance' | 'security' | 'maintainability' | 'testing' | 'documentation';
+  adherence: number;
+  examples: string[];
+  suggestions: string[];
+}
+
+export interface FrameworkPatternInfo {
+  framework: string;
+  patterns: string[];
+  version?: string;
+  configFiles: string[];
+  conventions: string[];
+}
+
+export interface BusinessLogicContextAnalysis {
+  domains: DomainInfo[];
+  workflows: WorkflowInfo[];
+  businessRules: BusinessRuleInfo[];
+  dataModels: DataModelInfo[];
+  integrations: IntegrationInfo[];
+}
+
+export interface DomainInfo {
+  name: string;
+  description: string;
+  files: string[];
+  entities: string[];
+  services: string[];
+  boundaries: string[];
+}
+
+export interface WorkflowInfo {
+  name: string;
+  steps: WorkflowStepInfo[];
+  entry: string;
+  exit: string[];
+  dataFlow: string[];
+  errorPaths: string[];
+}
+
+export interface WorkflowStepInfo {
+  step: string;
+  component: string;
+  file: string;
+  dependencies: string[];
+}
+
+export interface BusinessRuleInfo {
+  rule: string;
+  location: {file: string; line: number};
+  type: 'validation' | 'calculation' | 'workflow' | 'authorization';
+  impact: string;
+}
+
+export interface DataModelInfo {
+  entity: string;
+  fields: Array<{name: string; type: string; constraints: string[]}>;
+  relationships: Array<{type: string; target: string}>;
+  operations: string[];
+}
+
+export interface IntegrationInfo {
+  service: string;
+  type: 'external-api' | 'database' | 'message-queue' | 'file-system';
+  files: string[];
+  endpoints?: string[];
+  schemas?: string[];
+}
+
+export interface QualityMetricsAnalysis {
+  codeComplexity: ComplexityMetrics;
+  testCoverage: TestCoverageInfo;
+  documentation: DocumentationMetrics;
+  typesSafety: TypeSafetyMetrics;
+  codeQualityScore: number;
+  hotspots: QualityHotspotInfo[];
+}
+
+export interface ComplexityMetrics {
+  averageComplexity: number;
+  highComplexityFunctions: Array<{name: string; file: string; complexity: number}>;
+  complexityDistribution: Record<string, number>;
+  cognitiveComplexity: number;
+}
+
+export interface TestCoverageInfo {
+  testFiles: string[];
+  coveragePercentage: number;
+  testedFunctions: string[];
+  untestedFunctions: string[];
+  testPatterns: string[];
+}
+
+export interface DocumentationMetrics {
+  documentedFunctions: number;
+  undocumentedFunctions: number;
+  jsdocCoverage: number;
+  readmeFiles: string[];
+  documentationQuality: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
+export interface TypeSafetyMetrics {
+  typescriptCoverage: number;
+  anyTypes: number;
+  strictModeFiles: number;
+  typeDefinitions: number;
+  typeErrors: Array<{file: string; error: string}>;
+}
+
+export interface QualityHotspotInfo {
+  file: string;
+  issues: string[];
+  severity: 'low' | 'medium' | 'high';
+  suggestions: string[];
+  impact: string;
+}
+
+export interface DevelopmentGuidanceAnalysis {
+  onboardingGuide: OnboardingGuideInfo;
+  developmentPatterns: DevelopmentPatternInfo[];
+  commonTasks: CommonTaskInfo[];
+  troubleshooting: TroubleshootingInfo[];
+  codeExamples: CodeExampleInfo[];
+}
+
+export interface OnboardingGuideInfo {
+  setupSteps: string[];
+  keyFiles: string[];
+  architectureOverview: string;
+  firstSteps: string[];
+  resources: string[];
+}
+
+export interface DevelopmentPatternInfo {
+  task: string;
+  steps: string[];
+  examples: Array<{description: string; file: string; code: string}>;
+  pitfalls: string[];
+  tips: string[];
+}
+
+export interface CommonTaskInfo {
+  task: string;
+  pattern: string;
+  files: string[];
+  codeTemplate: string;
+  checklist: string[];
+}
+
+export interface TroubleshootingInfo {
+  issue: string;
+  symptoms: string[];
+  solutions: string[];
+  relatedFiles: string[];
+}
+
+export interface CodeExampleInfo {
+  purpose: string;
+  code: string;
+  file: string;
+  line: number;
+  explanation: string;
+}
+
+export interface ArchitecturalInsightsAnalysis {
+  layerStructure: LayerInfo[];
+  communicationPatterns: CommunicationPatternInfo[];
+  scalingConsiderations: ScalingConsiderationInfo[];
+  designPrinciples: DesignPrincipleInfo[];
+  architecturalDecisions: ArchitecturalDecisionInfo[];
+}
+
+export interface LayerInfo {
+  name: string;
+  purpose: string;
+  files: string[];
+  dependencies: string[];
+  responsibilities: string[];
+}
+
+export interface CommunicationPatternInfo {
+  pattern: string;
+  description: string;
+  files: string[];
+  benefits: string[];
+  tradeoffs: string[];
+}
+
+export interface ScalingConsiderationInfo {
+  area: string;
+  currentState: string;
+  opportunities: string[];
+  recommendations: string[];
+  impact: 'low' | 'medium' | 'high';
+}
+
+export interface DesignPrincipleInfo {
+  principle: string;
+  adherence: number;
+  violations: Array<{file: string; description: string}>;
+  recommendations: string[];
+}
+
+export interface ArchitecturalDecisionInfo {
+  decision: string;
+  rationale: string;
+  alternatives: string[];
+  consequences: string[];
+  files: string[];
+}
+
+export interface TechnologyIntegrationAnalysis {
+  externalServices: ExternalServiceInfo[];
+  databases: DatabaseIntegrationInfo[];
+  cloudServices: CloudServiceInfo[];
+  apis: ApiIntegrationInfo[];
+  libraries: LibraryInfo[];
+  deployment: DeploymentInfo;
+}
+
+export interface ExternalServiceInfo {
+  name: string;
+  type: string;
+  purpose: string;
+  files: string[];
+  configuration: string[];
+  endpoints?: string[];
+}
+
+export interface DatabaseIntegrationInfo extends DatabaseAnalysisInfo {
+  connectionPatterns: string[];
+  queryPatterns: string[];
+  performance: {
+    indexAnalysis: string[];
+    optimizationOpportunities: string[];
+  };
+}
+
+export interface CloudServiceInfo {
+  provider: 'aws' | 'azure' | 'gcp' | 'other';
+  services: Array<{name: string; purpose: string; files: string[]}>;
+  configuration: string[];
+  deployment: string[];
+}
+
+export interface ApiIntegrationInfo {
+  internal: Array<{name: string; files: string[]; endpoints: string[]}>;
+  external: Array<{name: string; files: string[]; purpose: string}>;
+  authentication: string[];
+  errorHandling: string[];
+}
+
+export interface LibraryInfo {
+  name: string;
+  version?: string;
+  purpose: string;
+  files: string[];
+  alternativeLibraries: string[];
+  migrationNotes?: string;
+}
+
+export interface DeploymentInfo {
+  strategy: string;
+  containerization: boolean;
+  orchestration?: string;
+  cicd: string[];
+  environments: string[];
+  monitoring: string[];
+}
+
+export interface PerformanceAnalysisInfo {
+  bundleAnalysis: BundleAnalysisInfo;
+  optimizationOpportunities: OptimizationOpportunityInfo[];
+  performanceMetrics: PerformanceMetricsInfo;
+  bottlenecks: BottleneckInfo[];
+  recommendations: PerformanceRecommendationInfo[];
+}
+
+export interface BundleAnalysisInfo {
+  totalSize: number;
+  largeDependencies: Array<{name: string; size: number}>;
+  codeSplitting: boolean;
+  lazyLoading: string[];
+  treeShaking: boolean;
+}
+
+export interface OptimizationOpportunityInfo {
+  type: 'bundle' | 'runtime' | 'network' | 'caching' | 'database';
+  description: string;
+  files: string[];
+  impact: 'low' | 'medium' | 'high';
+  effort: 'low' | 'medium' | 'high';
+  implementation: string;
+}
+
+export interface PerformanceMetricsInfo {
+  largestFiles: Array<{file: string; size: number}>;
+  complexFunctions: Array<{function: string; file: string; complexity: number}>;
+  deepNesting: Array<{file: string; depth: number}>;
+  longFunctions: Array<{function: string; file: string; lines: number}>;
+}
+
+export interface BottleneckInfo {
+  location: string;
+  type: 'computation' | 'io' | 'memory' | 'network';
+  description: string;
+  severity: 'low' | 'medium' | 'high';
+  solution: string;
+}
+
+export interface PerformanceRecommendationInfo {
+  category: string;
+  recommendation: string;
+  files: string[];
+  codeExample?: string;
+  expectedImpact: string;
+}
+
+export interface MigrationPathsAnalysis {
+  currentState: CurrentStateInfo;
+  migrationOpportunities: MigrationOpportunityInfo[];
+  modernizationPaths: ModernizationPathInfo[];
+  legacyCode: LegacyCodeInfo[];
+  upgradeRecommendations: UpgradeRecommendationInfo[];
+}
+
+export interface CurrentStateInfo {
+  technologies: Array<{name: string; version: string; status: 'current' | 'outdated' | 'deprecated'}>;
+  patterns: string[];
+  architecture: string;
+  maintainability: 'excellent' | 'good' | 'fair' | 'poor';
+}
+
+export interface MigrationOpportunityInfo {
+  from: string;
+  to: string;
+  type: 'framework' | 'library' | 'pattern' | 'architecture';
+  difficulty: 'easy' | 'medium' | 'hard';
+  benefits: string[];
+  risks: string[];
+  steps: string[];
+  files: string[];
+}
+
+export interface ModernizationPathInfo {
+  goal: string;
+  currentGap: string;
+  steps: Array<{step: string; effort: string; impact: string}>;
+  timeline: string;
+  dependencies: string[];
+}
+
+export interface LegacyCodeInfo {
+  file: string;
+  issues: string[];
+  modernAlternatives: string[];
+  migrationComplexity: 'low' | 'medium' | 'high';
+  businessImpact: string;
+}
+
+export interface UpgradeRecommendationInfo {
+  component: string;
+  currentVersion: string;
+  recommendedVersion: string;
+  breakingChanges: string[];
+  benefits: string[];
+  migrationGuide: string;
 }

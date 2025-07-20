@@ -75,7 +75,7 @@ chmod +x dist/main.js
 node dist/main.js scan /path/to/your/project
 
 # Custom output file
-node dist/main.js scan /path/to/project -o my-analysis.md
+node dist/main.js scan /path/to/your/project -o testing.md
 
 # Focus on specific areas
 node dist/main.js scan /path/to/project --focus api -v

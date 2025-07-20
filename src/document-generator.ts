@@ -55,6 +55,26 @@ export class DocumentGenerator {
       sections.push(this.generateStateManagementSection());
     }
 
+    // Enhanced Analysis Sections
+    if (this.analysisResults.semanticRelationships) {
+      sections.push(this.generateSemanticRelationshipsSection());
+    }
+
+    if (this.analysisResults.implementationPatterns) {
+      sections.push(this.generateImplementationPatternsSection());
+    }
+
+    if (this.analysisResults.businessLogicContext) {
+      sections.push(this.generateBusinessLogicContextSection());
+    }
+
+    if (this.analysisResults.qualityMetrics) {
+      sections.push(this.generateQualityMetricsSection());
+    }
+
+    // Implementation Guidance
+    sections.push(this.generateImplementationGuidanceSection());
+
     // File Details
     sections.push(this.generateFileDetailsSection());
 
@@ -97,11 +117,28 @@ export class DocumentGenerator {
 
     toc.push('- [TypeScript Analysis](#typescript-analysis)');
     toc.push('- [Component Analysis](#component-analysis)');
+
+    if (this.analysisResults.semanticRelationships) {
+      toc.push('- [Semantic Relationships](#semantic-relationships)');
+    }
+
+    if (this.analysisResults.implementationPatterns) {
+      toc.push('- [Implementation Patterns](#implementation-patterns)');
+    }
+
+    if (this.analysisResults.businessLogicContext) {
+      toc.push('- [Business Logic Context](#business-logic-context)');
+    }
+
+    if (this.analysisResults.qualityMetrics) {
+      toc.push('- [Quality Metrics](#quality-metrics)');
+    }
     
     if (this.analysisResults.stateAnalysis) {
       toc.push('- [State Management](#state-management)');
     }
 
+    toc.push('- [Implementation Guidance](#implementation-guidance)');
     toc.push('- [File Details](#file-details)');
 
     return toc.join('\n');
@@ -295,7 +332,20 @@ export class DocumentGenerator {
         sections.push('');
         
         if (func.parameters.length > 0) {
-          sections.push(`**Parameters**: \`${func.parameters.join(', ')}\``);
+          const paramStrings = func.parameters.map(param => {
+            let paramStr = param.name;
+            if (param.type) {
+              paramStr += `: ${param.type}`;
+            }
+            if (param.optional) {
+              paramStr += '?';
+            }
+            if (param.defaultValue) {
+              paramStr += ` = ${param.defaultValue}`;
+            }
+            return paramStr;
+          });
+          sections.push(`**Parameters**: \`${paramStrings.join(', ')}\``);
         }
         
         if (func.returnType) {
@@ -308,6 +358,14 @@ export class DocumentGenerator {
         
         if (func.docstring) {
           sections.push(`**Description**: ${func.docstring}`);
+        }
+        
+        // Add code snippet if available
+        if (func.codeSnippet) {
+          sections.push(`**Implementation**:`);
+          sections.push('```typescript');
+          sections.push(func.codeSnippet);
+          sections.push('```');
         }
         
         sections.push(`**Location**: Lines ${func.lineStart}-${func.lineEnd}`);
@@ -476,6 +534,133 @@ export class DocumentGenerator {
         `| \`${file.path}\` | ${file.language || 'unknown'} | ${this.formatBytes(file.size)} | ${funcCount} | ${classCount} |`
       );
     }
+
+    return sections.join('\n');
+  }
+
+  private generateImplementationGuidanceSection(): string {
+    const sections = [
+      '## Implementation Guidance',
+      '',
+      'This section provides practical examples for extending this codebase.',
+      ''
+    ];
+
+    // Detect the primary framework/patterns
+    const hasReact = this.getAllComponents().length > 0;
+    const hasZustand = this.analysisResults.stateAnalysis?.stores.some(s => s.type === 'zustand') || false;
+    const hasAPI = (this.analysisResults.apiAnalysis?.endpoints.length || 0) > 0;
+
+    if (hasReact) {
+      sections.push('### Adding New React Components');
+      sections.push('');
+      sections.push('Follow the existing component patterns:');
+      sections.push('');
+      sections.push('```typescript');
+      sections.push('// src/components/NewComponent.tsx');
+      sections.push('import React from \'react\';');
+      if (hasZustand) {
+        sections.push('import useChatStore from \'../store/chatStore\';');
+      }
+      sections.push('');
+      sections.push('interface NewComponentProps {');
+      sections.push('  title: string;');
+      sections.push('  onAction?: () => void;');
+      sections.push('}');
+      sections.push('');
+      sections.push('const NewComponent: React.FC<NewComponentProps> = ({ title, onAction }) => {');
+      if (hasZustand) {
+        sections.push('  const { sessions, addMessage } = useChatStore();');
+      }
+      sections.push('  ');
+      sections.push('  return (');
+      sections.push('    <div className="new-component">');
+      sections.push('      <h2>{title}</h2>');
+      sections.push('      {/* Your component content */}');
+      sections.push('    </div>');
+      sections.push('  );');
+      sections.push('};');
+      sections.push('');
+      sections.push('export default NewComponent;');
+      sections.push('```');
+      sections.push('');
+    }
+
+    if (hasZustand) {
+      sections.push('### Extending State Management');
+      sections.push('');
+      sections.push('To add new state to the Zustand store:');
+      sections.push('');
+      sections.push('```typescript');
+      sections.push('// Add to store interface');
+      sections.push('type ChatStore = {');
+      sections.push('  // ... existing state');
+      sections.push('  newFeature: boolean;');
+      sections.push('  ');
+      sections.push('  // ... existing actions');
+      sections.push('  toggleNewFeature: () => void;');
+      sections.push('};');
+      sections.push('');
+      sections.push('// Add to store implementation');
+      sections.push('const useChatStore = create<ChatStore>()(');
+      sections.push('  persist(');
+      sections.push('    (set, get) => ({');
+      sections.push('      // ... existing state');
+      sections.push('      newFeature: false,');
+      sections.push('      ');
+      sections.push('      // ... existing actions');
+      sections.push('      toggleNewFeature: () => {');
+      sections.push('        set((state) => ({ newFeature: !state.newFeature }));');
+      sections.push('      },');
+      sections.push('    }),');
+      sections.push('    { name: \'Taylor-chat-storage\' }');
+      sections.push('  )');
+      sections.push(');');
+      sections.push('```');
+      sections.push('');
+    }
+
+    if (hasAPI) {
+      sections.push('### Adding New API Functions');
+      sections.push('');
+      sections.push('Follow the existing API patterns:');
+      sections.push('');
+      sections.push('```typescript');
+      sections.push('// src/services/api.ts');
+      sections.push('export const newApiFunction = async (params: NewParams): Promise<NewResponse> => {');
+      sections.push('  try {');
+      sections.push('    const response = await fetch(\'/api/new-endpoint\', {');
+      sections.push('      method: \'POST\',');
+      sections.push('      headers: { \'Content-Type\': \'application/json\' },');
+      sections.push('      body: JSON.stringify(params)');
+      sections.push('    });');
+      sections.push('    ');
+      sections.push('    if (!response.ok) {');
+      sections.push('      throw new Error(`API error: ${response.status}`);');
+      sections.push('    }');
+      sections.push('    ');
+      sections.push('    return await response.json();');
+      sections.push('  } catch (error) {');
+      sections.push('    console.error(\'API call failed:\', error);');
+      sections.push('    throw error;');
+      sections.push('  }');
+      sections.push('};');
+      sections.push('```');
+      sections.push('');
+    }
+
+    // Add general best practices
+    sections.push('### Best Practices');
+    sections.push('');
+    sections.push('1. **File Organization**: Follow the existing directory structure');
+    sections.push('2. **Type Safety**: Define TypeScript interfaces for all data structures');
+    sections.push('3. **Error Handling**: Use consistent error patterns with try-catch blocks');
+    sections.push('4. **Component Props**: Use interface definitions for component props');
+    if (hasZustand) {
+      sections.push('5. **State Management**: Use Zustand for global state, useState for local state');
+    }
+    sections.push('6. **Imports**: Use absolute imports from src/ when possible');
+    sections.push('');
 
     return sections.join('\n');
   }
@@ -832,5 +1017,237 @@ export class DocumentGenerator {
     }
 
     return components;
+  }
+
+  private generateSemanticRelationshipsSection(): string {
+    const analysis = this.analysisResults.semanticRelationships!;
+    const sections: string[] = [];
+
+    sections.push('## Semantic Relationships');
+    sections.push('');
+    sections.push('### Component Relationships');
+    
+    if (analysis.componentRelationships.length > 0) {
+      for (const comp of analysis.componentRelationships.slice(0, 10)) {
+        sections.push(`#### \`${comp.name}\``);
+        sections.push(`**File**: \`${comp.file}\``);
+        sections.push(`**Uses**: ${comp.uses.join(', ') || 'None'}`);
+        sections.push(`**Used By**: ${comp.usedBy.join(', ') || 'None'}`);
+        sections.push(`**Styling**: ${comp.styledWith}`);
+        sections.push(`**State Management**: ${comp.stateManagement.join(', ') || 'None'}`);
+        sections.push('');
+      }
+    } else {
+      sections.push('No component relationships found.');
+    }
+
+    sections.push('### Function Relationships');
+    
+    if (analysis.functionRelationships.length > 0) {
+      for (const func of analysis.functionRelationships.slice(0, 10)) {
+        sections.push(`#### \`${func.name}\``);
+        sections.push(`**File**: \`${func.file}\``);
+        sections.push(`**Calls**: ${func.calls.join(', ') || 'None'}`);
+        sections.push(`**Called By**: ${func.calledBy.join(', ') || 'None'}`);
+        sections.push('');
+      }
+    } else {
+      sections.push('No function relationships found.');
+    }
+
+    sections.push('### Relationship Patterns');
+    
+    if (analysis.patterns.length > 0) {
+      for (const pattern of analysis.patterns) {
+        sections.push(`- **${pattern.pattern}**: ${pattern.occurrences} occurrences - ${pattern.description}`);
+      }
+    } else {
+      sections.push('No relationship patterns detected.');
+    }
+
+    return sections.join('\n');
+  }
+
+  private generateImplementationPatternsSection(): string {
+    const analysis = this.analysisResults.implementationPatterns!;
+    const sections: string[] = [];
+
+    sections.push('## Implementation Patterns');
+    sections.push('');
+    
+    if (analysis.patterns.length > 0) {
+      sections.push('### Detected Patterns');
+      
+      for (const pattern of analysis.patterns) {
+        sections.push(`#### ${pattern.name} (${pattern.type})`);
+        sections.push(`**Description**: ${pattern.description}`);
+        sections.push(`**Files**: ${pattern.files.length} files`);
+        sections.push(`**Benefits**: ${pattern.benefits.join(', ')}`);
+        sections.push(`**Implementation**: ${pattern.implementation}`);
+        sections.push('');
+      }
+    }
+
+    if (analysis.antiPatterns.length > 0) {
+      sections.push('### Anti-Patterns Detected');
+      
+      for (const antiPattern of analysis.antiPatterns) {
+        sections.push(`#### ${antiPattern.name} (${antiPattern.severity})`);
+        sections.push(`**Description**: ${antiPattern.description}`);
+        sections.push(`**Files**: ${antiPattern.files.length} files affected`);
+        sections.push(`**Suggestion**: ${antiPattern.suggestion}`);
+        sections.push('');
+      }
+    }
+
+    if (analysis.bestPractices.length > 0) {
+      sections.push('### Best Practices Analysis');
+      
+      for (const practice of analysis.bestPractices) {
+        const adherencePercent = Math.round(practice.adherence * 100);
+        sections.push(`- **${practice.practice}**: ${adherencePercent}% adherence (${practice.category})`);
+      }
+    }
+
+    if (analysis.frameworkPatterns.length > 0) {
+      sections.push('### Framework Patterns');
+      
+      for (const framework of analysis.frameworkPatterns) {
+        sections.push(`#### ${framework.framework}`);
+        sections.push(`**Patterns**: ${framework.patterns.join(', ')}`);
+        sections.push(`**Conventions**: ${framework.conventions.join(', ')}`);
+        sections.push('');
+      }
+    }
+
+    return sections.join('\n');
+  }
+
+  private generateBusinessLogicContextSection(): string {
+    const analysis = this.analysisResults.businessLogicContext!;
+    const sections: string[] = [];
+
+    sections.push('## Business Logic Context');
+    sections.push('');
+
+    if (analysis.domains.length > 0) {
+      sections.push('### Business Domains');
+      
+      for (const domain of analysis.domains) {
+        sections.push(`#### ${domain.name}`);
+        sections.push(`**Description**: ${domain.description}`);
+        sections.push(`**Files**: ${domain.files.length} files`);
+        sections.push(`**Entities**: ${domain.entities.join(', ') || 'None'}`);
+        sections.push(`**Services**: ${domain.services.length} services`);
+        sections.push('');
+      }
+    }
+
+    if (analysis.workflows.length > 0) {
+      sections.push('### Key Workflows');
+      
+      for (const workflow of analysis.workflows.slice(0, 5)) {
+        sections.push(`#### ${workflow.name}`);
+        sections.push(`**Entry Point**: ${workflow.entry}`);
+        sections.push(`**Steps**: ${workflow.steps.length} steps`);
+        sections.push(`**Data Flow**: ${workflow.dataFlow.join(' → ')}`);
+        sections.push('');
+      }
+    }
+
+    if (analysis.businessRules.length > 0) {
+      sections.push('### Business Rules');
+      
+      const rulesByType = analysis.businessRules.reduce((acc, rule) => {
+        if (!acc[rule.type]) acc[rule.type] = [];
+        acc[rule.type].push(rule);
+        return acc;
+      }, {} as Record<string, any[]>);
+
+      for (const [type, rules] of Object.entries(rulesByType)) {
+        sections.push(`#### ${type.charAt(0).toUpperCase() + type.slice(1)} Rules`);
+        for (const rule of rules.slice(0, 3)) {
+          sections.push(`- ${rule.rule} (${rule.location.file}:${rule.location.line})`);
+        }
+        if (rules.length > 3) {
+          sections.push(`- *...and ${rules.length - 3} more ${type} rules*`);
+        }
+        sections.push('');
+      }
+    }
+
+    if (analysis.integrations.length > 0) {
+      sections.push('### External Integrations');
+      
+      for (const integration of analysis.integrations) {
+        sections.push(`- **${integration.service}** (${integration.type}): ${integration.files.length} files`);
+      }
+    }
+
+    return sections.join('\n');
+  }
+
+  private generateQualityMetricsSection(): string {
+    const analysis = this.analysisResults.qualityMetrics!;
+    const sections: string[] = [];
+
+    sections.push('## Quality Metrics');
+    sections.push('');
+    sections.push(`### Overall Code Quality Score: ${analysis.codeQualityScore}/100`);
+    sections.push('');
+
+    // Complexity metrics
+    sections.push('### Code Complexity');
+    sections.push(`- **Average Complexity**: ${analysis.codeComplexity.averageComplexity.toFixed(2)}`);
+    sections.push(`- **Cognitive Complexity**: ${analysis.codeComplexity.cognitiveComplexity.toFixed(2)}`);
+    
+    if (analysis.codeComplexity.highComplexityFunctions.length > 0) {
+      sections.push('- **High Complexity Functions**:');
+      for (const func of analysis.codeComplexity.highComplexityFunctions.slice(0, 5)) {
+        sections.push(`  - \`${func.name}\` (${func.file}) - Complexity: ${func.complexity}`);
+      }
+    }
+    sections.push('');
+
+    // Test coverage
+    sections.push('### Test Coverage');
+    sections.push(`- **Coverage Percentage**: ${analysis.testCoverage.coveragePercentage.toFixed(1)}%`);
+    sections.push(`- **Test Files**: ${analysis.testCoverage.testFiles.length}`);
+    sections.push(`- **Tested Functions**: ${analysis.testCoverage.testedFunctions.length}`);
+    sections.push(`- **Untested Functions**: ${analysis.testCoverage.untestedFunctions.length}`);
+    if (analysis.testCoverage.testPatterns.length > 0) {
+      sections.push(`- **Test Patterns**: ${analysis.testCoverage.testPatterns.join(', ')}`);
+    }
+    sections.push('');
+
+    // Documentation
+    sections.push('### Documentation');
+    sections.push(`- **Documentation Quality**: ${analysis.documentation.documentationQuality}`);
+    sections.push(`- **JSDoc Coverage**: ${analysis.documentation.jsdocCoverage.toFixed(1)}%`);
+    sections.push(`- **Documented Functions**: ${analysis.documentation.documentedFunctions}`);
+    sections.push(`- **Undocumented Functions**: ${analysis.documentation.undocumentedFunctions}`);
+    sections.push('');
+
+    // Type safety
+    sections.push('### Type Safety');
+    sections.push(`- **TypeScript Coverage**: ${analysis.typesSafety.typescriptCoverage.toFixed(1)}%`);
+    sections.push(`- **Any Types Used**: ${analysis.typesSafety.anyTypes}`);
+    sections.push(`- **Type Definitions**: ${analysis.typesSafety.typeDefinitions}`);
+    sections.push('');
+
+    // Quality hotspots
+    if (analysis.hotspots.length > 0) {
+      sections.push('### Quality Hotspots');
+      
+      for (const hotspot of analysis.hotspots.slice(0, 5)) {
+        sections.push(`#### ${hotspot.file} (${hotspot.severity})`);
+        sections.push(`**Issues**: ${hotspot.issues.join(', ')}`);
+        sections.push(`**Impact**: ${hotspot.impact}`);
+        sections.push(`**Suggestions**: ${hotspot.suggestions.join(', ')}`);
+        sections.push('');
+      }
+    }
+
+    return sections.join('\n');
   }
 }

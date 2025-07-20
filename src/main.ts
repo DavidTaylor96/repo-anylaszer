@@ -14,6 +14,10 @@ import { DatabaseAnalyzer } from './analyzers/database-analyzer';
 import { CodePatternsAnalyzer } from './analyzers/code-patterns-analyzer';
 import { VectorAnalyzer } from './analyzers/vector-analyzer';
 import { ImportExportAnalyzer } from './analyzers/import-export-analyzer';
+import { SemanticRelationshipsAnalyzer } from './analyzers/semantic-relationships-analyzer';
+import { ImplementationPatternsAnalyzer } from './analyzers/implementation-patterns-analyzer';
+import { BusinessLogicContextAnalyzer } from './analyzers/business-logic-context-analyzer';
+import { QualityMetricsAnalyzer } from './analyzers/quality-metrics-analyzer';
 import { DocumentGenerator } from './document-generator';
 import { AnalysisResults, AnalysisFocus, ParseResult } from './types';
 
@@ -140,6 +144,33 @@ class RepositoryAnalyzer {
         const vectorAnalyzer = new VectorAnalyzer(this.repoPath, fileData, parserResults);
         analysisResults.vectorEmbeddings = await vectorAnalyzer.analyze();
         this.log('✅ Vector embeddings created');
+      }
+
+      // Enhanced analyses
+      if (this.shouldRunAnalysis('all')) {
+        // Semantic relationships analysis
+        this.log('🔗 Analyzing semantic relationships...');
+        const semanticAnalyzer = new SemanticRelationshipsAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.semanticRelationships = semanticAnalyzer.analyze();
+        this.log('✅ Semantic relationships analysis complete');
+
+        // Implementation patterns analysis
+        this.log('🏗️ Analyzing implementation patterns...');
+        const implementationPatternsAnalyzer = new ImplementationPatternsAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.implementationPatterns = implementationPatternsAnalyzer.analyze();
+        this.log('✅ Implementation patterns analysis complete');
+
+        // Business logic context analysis
+        this.log('💼 Analyzing business logic context...');
+        const businessLogicAnalyzer = new BusinessLogicContextAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.businessLogicContext = businessLogicAnalyzer.analyze();
+        this.log('✅ Business logic context analysis complete');
+
+        // Quality metrics analysis
+        this.log('📊 Analyzing code quality metrics...');
+        const qualityMetricsAnalyzer = new QualityMetricsAnalyzer(this.repoPath, fileData, parserResults);
+        analysisResults.qualityMetrics = qualityMetricsAnalyzer.analyze();
+        this.log('✅ Quality metrics analysis complete');
       }
 
       // Generate documentation

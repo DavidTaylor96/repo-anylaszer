@@ -129,15 +129,29 @@ export class StateAnalyzer {
   private extractZustandStores(filePath: string, content: string, _parseResult: ParseResult): StateStoreInfo[] {
     const stores: StateStoreInfo[] = [];
     
-    if (!content.includes('zustand') && !content.includes('create(')) return stores;
+    // Check if file imports from zustand or has create function calls
+    const hasZustandImport = content.includes('from \'zustand\'') || content.includes('from "zustand"');
+    const hasCreateCall = content.includes('create(') || content.includes('create<');
+    
+    if (!hasZustandImport && !hasCreateCall) return stores;
 
     const lines = content.split('\n');
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       
-      if (line.includes('create(') && (line.includes('zustand') || content.includes('zustand'))) {
-        const storeMatch = line.match(/(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*create/);
-        if (storeMatch) {
+      // Look for Zustand store creation patterns
+      const zustandPatterns = [
+        /(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*create\s*<[^>]*>\s*\(\s*\)\s*\(/,  // create<Type>()(
+        /(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*create\s*<[^>]*>\s*\(/,           // create<Type>(
+        /(?:export\s+)?(?:const|let|var)\s+(\w+)\s*=\s*create\s*\(/,                    // create(
+        /(?:export\s+default\s+)?(\w+)\s*=\s*create\s*<[^>]*>\s*\(\s*\)\s*\(/,          // default export ()()
+        /(?:export\s+default\s+)?(\w+)\s*=\s*create\s*<[^>]*>\s*\(/,                    // default export
+        /(?:export\s+default\s+)?(\w+)\s*=\s*create\s*\(/                               // default export simple
+      ];
+      
+      for (const pattern of zustandPatterns) {
+        const storeMatch = line.match(pattern);
+        if (storeMatch && hasZustandImport) {
           const storeName = storeMatch[1];
           const storeContent = this.extractStoreContent(lines, i);
           const actions = this.extractZustandActions(storeContent);
@@ -152,6 +166,7 @@ export class StateAnalyzer {
             actions,
             description: `Zustand store: ${storeName}`
           });
+          break;
         }
       }
     }

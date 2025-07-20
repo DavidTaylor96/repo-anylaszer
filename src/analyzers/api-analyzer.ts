@@ -39,8 +39,15 @@ export class ApiAnalyzer {
 
       for (const func of parseResult.functions) {
         if (this.isPublicFunction(func, exportedFunctionNames, filePath)) {
+          const fileContent = this.getFileContent(filePath);
+          const codeSnippet = fileContent ? this.extractFunctionCode(func, fileContent) : undefined;
+          const relationships = this.extractFunctionRelationships(func, fileContent || '', parseResult);
+          
           publicFunctions.push({
             ...func,
+            codeSnippet,
+            calls: relationships.calls,
+            calledBy: relationships.calledBy,
             // Add file context
             docstring: func.docstring ? `${func.docstring} (from ${filePath})` : `From ${filePath}`
           });
@@ -528,51 +535,94 @@ export class ApiAnalyzer {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      const trimmedLine = line.trim();
       
-      // JWT patterns
-      if (line.includes('jwt') || line.includes('JWT') || line.includes('Bearer')) {
+      // Skip comments, imports, and empty lines
+      if (trimmedLine.startsWith('//') || trimmedLine.startsWith('/*') || 
+          trimmedLine.startsWith('*') || trimmedLine.startsWith('import') ||
+          trimmedLine.startsWith('export') || trimmedLine.length === 0) {
+        continue;
+      }
+      
+      // More specific JWT patterns - look for actual usage, not just mentions
+      const jwtPatterns = [
+        /jwt\.sign\s*\(/i,
+        /jwt\.verify\s*\(/i,
+        /jwt\.decode\s*\(/i,
+        /Bearer\s+[\w.-]+/i,
+        /Authorization.*Bearer/i,
+        /jsonwebtoken/i,
+        /\.sign\s*\(\s*\{.*\}\s*,\s*['"`][\w.-]+['"`]/
+      ];
+      
+      if (jwtPatterns.some(pattern => pattern.test(line))) {
         patterns.push({
           type: 'jwt',
           name: 'JWT Authentication',
           file: filePath,
           lineStart: i + 1,
-          description: `JWT authentication found: ${line.trim()}`,
+          description: `JWT authentication implementation: ${trimmedLine}`,
           pattern: 'Bearer token'
         });
       }
 
-      // OAuth patterns
-      if (line.includes('oauth') || line.includes('OAuth') || line.includes('client_id')) {
+      // More specific OAuth patterns - look for actual OAuth flow implementation
+      const oauthPatterns = [
+        /client_id.*client_secret/i,
+        /oauth2?\.authorize/i,
+        /access_token.*refresh_token/i,
+        /grant_type.*authorization_code/i,
+        /scope.*openid/i
+      ];
+      
+      if (oauthPatterns.some(pattern => pattern.test(line))) {
         patterns.push({
           type: 'oauth',
           name: 'OAuth Authentication',
           file: filePath,
           lineStart: i + 1,
-          description: `OAuth pattern found: ${line.trim()}`,
+          description: `OAuth implementation: ${trimmedLine}`,
           pattern: 'OAuth 2.0'
         });
       }
 
-      // API Key patterns
-      if (line.includes('api_key') || line.includes('apiKey') || line.includes('x-api-key')) {
+      // More specific API Key patterns - look for header setting or validation
+      const apiKeyPatterns = [
+        /x-api-key.*headers/i,
+        /api[_-]?key.*headers/i,
+        /headers\[['"`]x-api-key['"`]\]/i,
+        /req\.headers\[['"`]api[_-]?key['"`]\]/i,
+        /\.setHeader\s*\(\s*['"`]x-api-key['"`]/i
+      ];
+      
+      if (apiKeyPatterns.some(pattern => pattern.test(line))) {
         patterns.push({
           type: 'apiKey',
           name: 'API Key Authentication',
           file: filePath,
           lineStart: i + 1,
-          description: `API key pattern found: ${line.trim()}`,
+          description: `API key implementation: ${trimmedLine}`,
           pattern: 'API Key'
         });
       }
 
-      // Session patterns
-      if (line.includes('session') || line.includes('cookie') || line.includes('express-session')) {
+      // More specific Session patterns - look for actual session usage
+      const sessionPatterns = [
+        /express-session/i,
+        /session\.save\s*\(/i,
+        /session\.destroy\s*\(/i,
+        /req\.session\./i,
+        /connect\.session/i,
+        /cookie-session/i
+      ];
+      
+      if (sessionPatterns.some(pattern => pattern.test(line))) {
         patterns.push({
           type: 'session',
           name: 'Session Authentication',
           file: filePath,
           lineStart: i + 1,
-          description: `Session pattern found: ${line.trim()}`,
+          description: `Session implementation: ${trimmedLine}`,
           pattern: 'Session/Cookie'
         });
       }
@@ -582,23 +632,27 @@ export class ApiAnalyzer {
   }
 
   private isAuthFunction(name: string): boolean {
-    const authIndicators = [
-      'auth', 'login', 'logout', 'authenticate', 'authorize', 'verify',
-      'token', 'jwt', 'session', 'permission', 'access', 'guard'
+    const authFunctionPatterns = [
+      /^(authenticate|authorize|login|logout|signin|signout|signup|register)$/i,
+      /^(verify|validate|check).*?(token|auth|permission|access)$/i,
+      /^(create|generate|issue).*?(token|jwt)$/i,
+      /^(refresh|revoke|invalidate).*?(token|session)$/i,
+      /^.*?(middleware|guard|auth)$/i
     ];
     
-    const lowerName = name.toLowerCase();
-    return authIndicators.some(indicator => lowerName.includes(indicator));
+    return authFunctionPatterns.some(pattern => pattern.test(name));
   }
 
   private isAuthConstant(name: string): boolean {
-    const authIndicators = [
-      'auth', 'jwt', 'token', 'secret', 'key', 'client_id', 'client_secret',
-      'api_key', 'bearer', 'oauth', 'session'
+    const authConstantPatterns = [
+      /^(jwt|auth).*?(secret|key|token)$/i,
+      /^(client|api).*?(id|key|secret)$/i,
+      /^(access|refresh).*?token$/i,
+      /^.*?(secret|key)$/i,
+      /^(oauth|bearer|session).*?(config|settings)$/i
     ];
     
-    const lowerName = name.toLowerCase();
-    return authIndicators.some(indicator => lowerName.includes(indicator));
+    return authConstantPatterns.some(pattern => pattern.test(name));
   }
 
   private extractAuthPattern(funcName: string): string {
@@ -804,5 +858,54 @@ export class ApiAnalyzer {
     }
     
     return schemas;
+  }
+
+  private extractFunctionCode(func: FunctionInfo, content: string): string {
+    const lines = content.split('\n');
+    const startIndex = Math.max(0, func.lineStart - 1);
+    const endIndex = Math.min(lines.length, func.lineEnd);
+    
+    // Get the function code with proper indentation
+    const functionLines = lines.slice(startIndex, endIndex);
+    
+    // Remove common leading whitespace while preserving relative indentation
+    const minIndent = functionLines
+      .filter(line => line.trim().length > 0)
+      .reduce((min, line) => {
+        const indent = line.match(/^\s*/)?.[0].length || 0;
+        return Math.min(min, indent);
+      }, Infinity);
+    
+    const cleanedLines = functionLines.map(line => 
+      line.length > minIndent ? line.substring(minIndent) : line
+    );
+    
+    return cleanedLines.join('\n').trim();
+  }
+
+  private extractFunctionRelationships(func: FunctionInfo, content: string, parseResult: ParseResult): {calls: string[], calledBy: string[]} {
+    const functionContent = this.extractFunctionContent(func, content);
+    const calls: string[] = [];
+    const calledBy: string[] = [];
+    
+    // Find functions this function calls
+    for (const otherFunc of parseResult.functions) {
+      if (otherFunc.name !== func.name) {
+        // Check if this function calls the other function
+        const callPattern = new RegExp(`\\b${otherFunc.name}\\s*\\(`, 'g');
+        if (callPattern.test(functionContent)) {
+          calls.push(otherFunc.name);
+        }
+        
+        // Check if the other function calls this function
+        const otherFuncContent = this.extractFunctionContent(otherFunc, content);
+        const calledByPattern = new RegExp(`\\b${func.name}\\s*\\(`, 'g');
+        if (calledByPattern.test(otherFuncContent)) {
+          calledBy.push(otherFunc.name);
+        }
+      }
+    }
+    
+    return { calls: [...new Set(calls)], calledBy: [...new Set(calledBy)] };
   }
 }

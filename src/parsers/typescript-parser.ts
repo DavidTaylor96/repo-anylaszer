@@ -21,6 +21,18 @@ export class TypeScriptParser extends BaseParser {
   private parseFunctions(): FunctionInfo[] {
     const functions: FunctionInfo[] = [];
     
+    // Control flow keywords to filter out
+    const controlFlowKeywords = new Set([
+      'if', 'else', 'for', 'while', 'do', 'switch', 'case', 'try', 'catch', 'finally',
+      'return', 'break', 'continue', 'throw', 'typeof', 'instanceof', 'new', 'delete',
+      'var', 'let', 'const', 'class', 'interface', 'type', 'enum', 'namespace',
+      'import', 'export', 'default', 'extends', 'implements', 'static', 'public',
+      'private', 'protected', 'abstract', 'readonly', 'async', 'await', 'yield'
+    ]);
+    
+    // Event handler patterns to filter out
+    const eventHandlerPattern = /^(on[A-Z]\w*|handle[A-Z]\w*)$/;
+    
     // Patterns for different function declarations
     const patterns = [
       /^\s*(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?\s*\{/,
@@ -36,6 +48,17 @@ export class TypeScriptParser extends BaseParser {
         const match = line.match(pattern);
         if (match) {
           const name = match[1];
+          
+          // Filter out control flow keywords and common event handlers
+          if (controlFlowKeywords.has(name) || eventHandlerPattern.test(name)) {
+            continue;
+          }
+          
+          // Skip if it's not a proper function name (contains special chars, starts with number, etc.)
+          if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)) {
+            continue;
+          }
+          
           const params = this.parseParameters(match[2] || '');
           const returnType = match[3]?.trim();
           const isAsync = line.includes('async');
@@ -506,16 +529,35 @@ export class TypeScriptParser extends BaseParser {
   }
 
   private isReactComponent(lineIndex: number): boolean {
-    // Check if this looks like a React component by examining the content
+    const line = this.lines[lineIndex];
     const functionContent = this.getFunctionContent(lineIndex);
     
-    // Look for JSX patterns or React-specific imports
-    const hasJSXPattern = /<[A-Z]|<\/|jsx|JSX\.Element|React\.FC|ReactNode|Component/;
+    // Get function name
+    const functionNameMatch = line.match(/(?:function\s+|const\s+|let\s+|var\s+)(\w+)/);
+    if (!functionNameMatch) return false;
+    
+    const functionName = functionNameMatch[1];
+    
+    // Component name should start with uppercase letter
+    if (!/^[A-Z]/.test(functionName)) return false;
+    
+    // Should not be a common event handler pattern
+    if (/^(handle|on)[A-Z]/.test(functionName)) return false;
+    
+    // Check if this looks like a React component by examining the content
     const hasReactImport = this.lines.some(line => 
       line.includes("import") && (line.includes("react") || line.includes("React"))
     );
-
-    return hasReactImport && hasJSXPattern.test(functionContent);
+    
+    // Look for JSX patterns (actual JSX elements, not just any angle brackets)
+    const hasJSXReturn = /<[A-Z][^>]*>/.test(functionContent) || // Component JSX
+                        /return\s*\([\s\S]*</.test(functionContent) || // JSX in return
+                        /return\s*</.test(functionContent); // Direct JSX return
+    
+    // Look for React-specific type annotations
+    const hasReactTypes = /React\.FC|ReactNode|JSX\.Element|ComponentProps/.test(functionContent);
+    
+    return hasReactImport && (hasJSXReturn || hasReactTypes);
   }
 
   private extractComponentProps(propsParam: string, _startLine: number, _endLine: number): Array<{name: string, type?: string, optional: boolean}> {
