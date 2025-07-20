@@ -77,17 +77,39 @@ export class CodePatternsAnalyzer {
   private detectDesignPatterns(): CodePatternInfo[] {
     const patterns: CodePatternInfo[] = [];
 
-    // Detect Singleton pattern
+    // Existing patterns
     patterns.push(...this.detectSingletonPattern());
-
-    // Detect Factory pattern
     patterns.push(...this.detectFactoryPattern());
-
-    // Detect Observer pattern
     patterns.push(...this.detectObserverPattern());
-
-    // Detect Repository pattern
     patterns.push(...this.detectRepositoryPattern());
+
+    // GoF Creational Patterns
+    patterns.push(...this.detectBuilderPattern());
+    patterns.push(...this.detectAbstractFactoryPattern());
+    patterns.push(...this.detectPrototypePattern());
+
+    // GoF Structural Patterns
+    patterns.push(...this.detectAdapterPattern());
+    patterns.push(...this.detectDecoratorPattern());
+    patterns.push(...this.detectFacadePattern());
+    patterns.push(...this.detectProxyPattern());
+    patterns.push(...this.detectCompositePattern());
+
+    // GoF Behavioral Patterns
+    patterns.push(...this.detectStrategyPattern());
+    patterns.push(...this.detectCommandPattern());
+    patterns.push(...this.detectStatePattern());
+    patterns.push(...this.detectTemplateMethodPattern());
+    patterns.push(...this.detectChainOfResponsibilityPattern());
+    patterns.push(...this.detectIteratorPattern());
+    patterns.push(...this.detectMediatorPattern());
+
+    // Modern Patterns
+    patterns.push(...this.detectDependencyInjectionPattern());
+    patterns.push(...this.detectModulePattern());
+    patterns.push(...this.detectMVVMPattern());
+    patterns.push(...this.detectMVPPattern());
+    patterns.push(...this.detectPubSubPattern());
 
     return patterns;
   }
@@ -624,6 +646,746 @@ export class CodePatternsAnalyzer {
     }
 
     return suggestions;
+  }
+
+  // === GoF Creational Patterns ===
+
+  private detectBuilderPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const builders: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        // Look for Builder pattern indicators
+        const hasBuilderName = cls.name.toLowerCase().includes('builder');
+        const hasBuildMethod = cls.methods.some(m => m.name.toLowerCase() === 'build');
+        const hasFluentMethods = cls.methods.filter(m => 
+          m.returnType === cls.name || m.returnType === 'this'
+        ).length > 2;
+
+        if (hasBuilderName || (hasBuildMethod && hasFluentMethods)) {
+          builders.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (builders.length > 0) {
+      patterns.push({
+        pattern: 'Builder Pattern',
+        type: 'design',
+        description: `Found ${builders.length} potential builder implementations`,
+        files: [...new Set(builders.map(b => b.file))],
+        examples: builders,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectAbstractFactoryPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const abstractFactories: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasAbstractFactoryName = cls.name.toLowerCase().includes('abstractfactory') || 
+                                      cls.name.toLowerCase().includes('factory') && cls.isAbstract;
+        const hasCreateMethods = cls.methods.filter(m => 
+          m.name.toLowerCase().startsWith('create')
+        ).length > 1;
+
+        if (hasAbstractFactoryName || hasCreateMethods) {
+          abstractFactories.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (abstractFactories.length > 0) {
+      patterns.push({
+        pattern: 'Abstract Factory Pattern',
+        type: 'design',
+        description: `Found ${abstractFactories.length} potential abstract factory implementations`,
+        files: [...new Set(abstractFactories.map(af => af.file))],
+        examples: abstractFactories,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectPrototypePattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const prototypes: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasCloneMethod = cls.methods.some(m => 
+          m.name.toLowerCase() === 'clone' || m.name.toLowerCase() === 'copy'
+        );
+        const hasPrototypeName = cls.name.toLowerCase().includes('prototype');
+
+        if (hasCloneMethod || hasPrototypeName) {
+          prototypes.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (prototypes.length > 0) {
+      patterns.push({
+        pattern: 'Prototype Pattern',
+        type: 'design',
+        description: `Found ${prototypes.length} potential prototype implementations`,
+        files: [...new Set(prototypes.map(p => p.file))],
+        examples: prototypes,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  // === GoF Structural Patterns ===
+
+  private detectAdapterPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const adapters: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasAdapterName = cls.name.toLowerCase().includes('adapter') || 
+                              cls.name.toLowerCase().includes('wrapper');
+        const hasAdapteeProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('adaptee') || 
+          p.name.toLowerCase().includes('wrapped')
+        );
+
+        if (hasAdapterName || hasAdapteeProperty) {
+          adapters.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (adapters.length > 0) {
+      patterns.push({
+        pattern: 'Adapter Pattern',
+        type: 'design',
+        description: `Found ${adapters.length} potential adapter implementations`,
+        files: [...new Set(adapters.map(a => a.file))],
+        examples: adapters,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectDecoratorPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const decorators: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasDecoratorName = cls.name.toLowerCase().includes('decorator');
+        const hasComponentProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('component')
+        );
+        const implementsSameInterface = cls.implements && cls.implements.length > 0;
+
+        if (hasDecoratorName || (hasComponentProperty && implementsSameInterface)) {
+          decorators.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (decorators.length > 0) {
+      patterns.push({
+        pattern: 'Decorator Pattern',
+        type: 'design',
+        description: `Found ${decorators.length} potential decorator implementations`,
+        files: [...new Set(decorators.map(d => d.file))],
+        examples: decorators,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectFacadePattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const facades: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasFacadeName = cls.name.toLowerCase().includes('facade') || 
+                             cls.name.toLowerCase().includes('manager');
+        const hasMultipleSubsystemReferences = cls.properties.length > 3;
+        const hasSimplifiedMethods = cls.methods.filter(m => 
+          m.name.toLowerCase().includes('get') || 
+          m.name.toLowerCase().includes('execute') ||
+          m.name.toLowerCase().includes('process')
+        ).length > 2;
+
+        if (hasFacadeName || (hasMultipleSubsystemReferences && hasSimplifiedMethods)) {
+          facades.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (facades.length > 0) {
+      patterns.push({
+        pattern: 'Facade Pattern',
+        type: 'design',
+        description: `Found ${facades.length} potential facade implementations`,
+        files: [...new Set(facades.map(f => f.file))],
+        examples: facades,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectProxyPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const proxies: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasProxyName = cls.name.toLowerCase().includes('proxy');
+        const hasRealSubjectProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('real') || 
+          p.name.toLowerCase().includes('subject') ||
+          p.name.toLowerCase().includes('target')
+        );
+        const implementsSameInterface = cls.implements && cls.implements.length > 0;
+
+        if (hasProxyName || (hasRealSubjectProperty && implementsSameInterface)) {
+          proxies.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (proxies.length > 0) {
+      patterns.push({
+        pattern: 'Proxy Pattern',
+        type: 'design',
+        description: `Found ${proxies.length} potential proxy implementations`,
+        files: [...new Set(proxies.map(p => p.file))],
+        examples: proxies,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectCompositePattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const composites: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasCompositeIndicators = cls.name.toLowerCase().includes('composite') ||
+                                      cls.name.toLowerCase().includes('tree') ||
+                                      cls.name.toLowerCase().includes('node');
+        const hasChildrenProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('children') || 
+          p.name.toLowerCase().includes('components')
+        );
+        const hasAddRemoveMethods = cls.methods.some(m => m.name.toLowerCase() === 'add') &&
+                                   cls.methods.some(m => m.name.toLowerCase() === 'remove');
+
+        if (hasCompositeIndicators || (hasChildrenProperty && hasAddRemoveMethods)) {
+          composites.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (composites.length > 0) {
+      patterns.push({
+        pattern: 'Composite Pattern',
+        type: 'design',
+        description: `Found ${composites.length} potential composite implementations`,
+        files: [...new Set(composites.map(c => c.file))],
+        examples: composites,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  // === GoF Behavioral Patterns ===
+
+  private detectStrategyPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const strategies: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasStrategyName = cls.name.toLowerCase().includes('strategy');
+        const hasStrategyProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('strategy')
+        );
+        const hasExecuteMethod = cls.methods.some(m => 
+          m.name.toLowerCase() === 'execute' || 
+          m.name.toLowerCase() === 'algorithm' ||
+          m.name.toLowerCase() === 'operation'
+        );
+
+        if (hasStrategyName || (hasStrategyProperty && hasExecuteMethod)) {
+          strategies.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (strategies.length > 0) {
+      patterns.push({
+        pattern: 'Strategy Pattern',
+        type: 'design',
+        description: `Found ${strategies.length} potential strategy implementations`,
+        files: [...new Set(strategies.map(s => s.file))],
+        examples: strategies,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectCommandPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const commands: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasCommandName = cls.name.toLowerCase().includes('command');
+        const hasExecuteMethod = cls.methods.some(m => 
+          m.name.toLowerCase() === 'execute'
+        );
+        const hasUndoMethod = cls.methods.some(m => 
+          m.name.toLowerCase() === 'undo'
+        );
+        const hasReceiverProperty = cls.properties.some(p => 
+          p.name.toLowerCase().includes('receiver')
+        );
+
+        if (hasCommandName || (hasExecuteMethod && (hasUndoMethod || hasReceiverProperty))) {
+          commands.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (commands.length > 0) {
+      patterns.push({
+        pattern: 'Command Pattern',
+        type: 'design',
+        description: `Found ${commands.length} potential command implementations`,
+        files: [...new Set(commands.map(c => c.file))],
+        examples: commands,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectStatePattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const states: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasStateName = cls.name.toLowerCase().includes('state');
+        const hasStateProperty = cls.properties.some(p => 
+          p.name.toLowerCase() === 'state' || 
+          p.name.toLowerCase() === 'currentstate'
+        );
+        const hasTransitionMethods = cls.methods.filter(m => 
+          m.name.toLowerCase().includes('transition') ||
+          m.name.toLowerCase().includes('change') ||
+          m.name.toLowerCase().includes('switch')
+        ).length > 0;
+
+        if (hasStateName || (hasStateProperty && hasTransitionMethods)) {
+          states.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (states.length > 0) {
+      patterns.push({
+        pattern: 'State Pattern',
+        type: 'design',
+        description: `Found ${states.length} potential state implementations`,
+        files: [...new Set(states.map(s => s.file))],
+        examples: states,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectTemplateMethodPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const templates: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasTemplateName = cls.name.toLowerCase().includes('template') ||
+                               cls.name.toLowerCase().includes('abstract');
+        const hasAbstractMethods = cls.methods.filter(m => 
+          m.visibility === 'protected' || m.name.toLowerCase().includes('step')
+        ).length > 1;
+        const hasTemplateMethod = cls.methods.some(m => 
+          m.name.toLowerCase().includes('template') ||
+          m.name.toLowerCase().includes('execute') ||
+          m.name.toLowerCase().includes('process')
+        );
+
+        if (hasTemplateName || (hasAbstractMethods && hasTemplateMethod)) {
+          templates.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (templates.length > 0) {
+      patterns.push({
+        pattern: 'Template Method Pattern',
+        type: 'design',
+        description: `Found ${templates.length} potential template method implementations`,
+        files: [...new Set(templates.map(t => t.file))],
+        examples: templates,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectChainOfResponsibilityPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const chains: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasChainName = cls.name.toLowerCase().includes('handler') ||
+                            cls.name.toLowerCase().includes('chain');
+        const hasNextProperty = cls.properties.some(p => 
+          p.name.toLowerCase() === 'next' || 
+          p.name.toLowerCase() === 'successor'
+        );
+        const hasHandleMethod = cls.methods.some(m => 
+          m.name.toLowerCase() === 'handle' ||
+          m.name.toLowerCase() === 'process'
+        );
+
+        if (hasChainName || (hasNextProperty && hasHandleMethod)) {
+          chains.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (chains.length > 0) {
+      patterns.push({
+        pattern: 'Chain of Responsibility Pattern',
+        type: 'design',
+        description: `Found ${chains.length} potential chain of responsibility implementations`,
+        files: [...new Set(chains.map(c => c.file))],
+        examples: chains,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectIteratorPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const iterators: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasIteratorName = cls.name.toLowerCase().includes('iterator');
+        const hasIteratorMethods = cls.methods.some(m => m.name.toLowerCase() === 'next') &&
+                                  cls.methods.some(m => m.name.toLowerCase() === 'hasnext' || m.name.toLowerCase() === 'hasmore');
+        const implementsIteratorInterface = cls.implements?.some(i => 
+          i.toLowerCase().includes('iterator') || i.toLowerCase().includes('iterable')
+        );
+
+        if (hasIteratorName || hasIteratorMethods || implementsIteratorInterface) {
+          iterators.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (iterators.length > 0) {
+      patterns.push({
+        pattern: 'Iterator Pattern',
+        type: 'design',
+        description: `Found ${iterators.length} potential iterator implementations`,
+        files: [...new Set(iterators.map(i => i.file))],
+        examples: iterators,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectMediatorPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const mediators: Array<{file: string, line: number, code: string}> = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const hasMediatorName = cls.name.toLowerCase().includes('mediator') ||
+                               cls.name.toLowerCase().includes('controller') ||
+                               cls.name.toLowerCase().includes('coordinator');
+        const hasColleagues = cls.properties.filter(p => 
+          p.name.toLowerCase().includes('component') ||
+          p.name.toLowerCase().includes('colleague')
+        ).length > 1;
+        const hasNotifyMethods = cls.methods.some(m => 
+          m.name.toLowerCase().includes('notify') ||
+          m.name.toLowerCase().includes('mediate')
+        );
+
+        if (hasMediatorName || (hasColleagues && hasNotifyMethods)) {
+          mediators.push({
+            file: filePath,
+            line: cls.lineStart,
+            code: cls.name
+          });
+        }
+      }
+    }
+
+    if (mediators.length > 0) {
+      patterns.push({
+        pattern: 'Mediator Pattern',
+        type: 'design',
+        description: `Found ${mediators.length} potential mediator implementations`,
+        files: [...new Set(mediators.map(m => m.file))],
+        examples: mediators,
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  // === Modern Patterns ===
+
+  private detectDependencyInjectionPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const diPatterns: Array<{file: string, line: number, code: string}> = [];
+
+    // Look for dependency injection frameworks
+    const diImportPattern = /import.*from\s+['"](@angular\/core|inversify|tsyringe|container|injection)['"];/;
+    const filesWithDI = this.getFilesWithPattern(diImportPattern);
+
+    // Look for constructor injection
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      for (const cls of parseResult.classes) {
+        const constructor = cls.methods.find(m => m.name === 'constructor');
+        if (constructor && constructor.parameters.length > 2) {
+          diPatterns.push({
+            file: filePath,
+            line: constructor.lineStart,
+            code: `${cls.name} constructor with ${constructor.parameters.length} dependencies`
+          });
+        }
+      }
+    }
+
+    const allFiles = [...new Set([...filesWithDI, ...diPatterns.map(p => p.file)])];
+
+    if (allFiles.length > 0) {
+      patterns.push({
+        pattern: 'Dependency Injection Pattern',
+        type: 'design',
+        description: `Dependency injection pattern detected in ${allFiles.length} files`,
+        files: allFiles,
+        examples: diPatterns.slice(0, 5),
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectModulePattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const modules: Array<{file: string, line: number, code: string}> = [];
+
+    // Look for module patterns
+    const modulePatterns = [
+      /const\s+\w+\s*=\s*\(function\s*\(\)\s*\{/,  // IIFE module
+      /export\s+default\s+\{/,  // ES6 module export
+      /module\.exports\s*=/,  // CommonJS module
+      /define\s*\(\s*\[/  // AMD module
+    ];
+
+    for (const pattern of modulePatterns) {
+      const matchedFiles = this.getFilesWithPattern(pattern);
+      modules.push(...this.getPatternExamples(pattern, matchedFiles));
+    }
+
+    if (modules.length > 0) {
+      patterns.push({
+        pattern: 'Module Pattern',
+        type: 'design',
+        description: `Module pattern detected in ${modules.length} implementations`,
+        files: [...new Set(modules.map(m => m.file))],
+        examples: modules.slice(0, 5),
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectMVVMPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const mvvmFiles: string[] = [];
+
+    // Look for MVVM indicators
+    const hasViewModels = this.fileData.some(file => 
+      file.path.toLowerCase().includes('viewmodel')
+    );
+    const hasDataBinding = this.getFilesWithPattern(/@bind|v-model|\[\(ngModel\)\]/);
+    const hasMVVMFramework = this.getFilesWithPattern(/import.*from\s+['"](@angular\/core|vue|knockout)['"]/);
+
+    if (hasViewModels || hasDataBinding.length > 0 || hasMVVMFramework.length > 0) {
+      mvvmFiles.push(...hasDataBinding, ...hasMVVMFramework);
+      
+      patterns.push({
+        pattern: 'MVVM Pattern',
+        type: 'design',
+        description: 'Model-View-ViewModel architectural pattern detected',
+        files: [...new Set(mvvmFiles)],
+        examples: this.getPatternExamples(/@bind|v-model/, mvvmFiles.slice(0, 3)),
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectMVPPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const mvpFiles: string[] = [];
+
+    const hasPresenters = this.fileData.some(file => 
+      file.path.toLowerCase().includes('presenter')
+    );
+    const hasViewInterfaces = this.getFilesWithPattern(/interface.*View\s*\{/);
+
+    if (hasPresenters || hasViewInterfaces.length > 0) {
+      mvpFiles.push(...hasViewInterfaces);
+      
+      patterns.push({
+        pattern: 'MVP Pattern',
+        type: 'design',
+        description: 'Model-View-Presenter architectural pattern detected',
+        files: [...new Set(mvpFiles)],
+        examples: this.getPatternExamples(/interface.*View/, mvpFiles.slice(0, 3)),
+        severity: 'info'
+      });
+    }
+
+    return patterns;
+  }
+
+  private detectPubSubPattern(): CodePatternInfo[] {
+    const patterns: CodePatternInfo[] = [];
+    const pubSubFiles: string[] = [];
+
+    const pubSubPatterns = [
+      /\.(publish|subscribe|emit|on)\s*\(/,
+      /EventEmitter|Observable|Subject/,
+      /\.(addListener|removeListener)\s*\(/
+    ];
+
+    for (const pattern of pubSubPatterns) {
+      pubSubFiles.push(...this.getFilesWithPattern(pattern));
+    }
+
+    const uniqueFiles = [...new Set(pubSubFiles)];
+
+    if (uniqueFiles.length > 0) {
+      patterns.push({
+        pattern: 'Publisher-Subscriber Pattern',
+        type: 'design',
+        description: `Pub/Sub pattern detected in ${uniqueFiles.length} files`,
+        files: uniqueFiles,
+        examples: this.getPatternExamples(pubSubPatterns[0], uniqueFiles.slice(0, 5)),
+        severity: 'info'
+      });
+    }
+
+    return patterns;
   }
 
   // Helper methods for naming conventions
