@@ -1,8 +1,8 @@
 # Repository Analyzer - Enterprise Edition
 
-🚀 **A comprehensive code analysis tool that understands modern development patterns and generates intelligent documentation for AI-powered development workflows.**
+🚀 **An enterprise-grade code analysis tool that provides comprehensive backend API analysis, security assessment, and architectural insights for AI-powered development workflows.**
 
-Perfect for teams using **React**, **Node.js**, **Azure**, **AWS**, **Kafka**, **Docker**, and modern JavaScript/TypeScript stacks. Generate rich documentation that enables AI chatbots to understand your codebase architecture and generate contextually appropriate code.
+Perfect for teams building **backend APIs** with **Express**, **NestJS**, **Fastify**, or **GraphQL**, using **databases** like **Prisma**, **TypeORM**, **Sequelize**, and deploying to **Azure**, **AWS**, **Docker**, and **Kubernetes**. Features advanced security analysis, performance profiling, and generates AI-ready documentation for intelligent code generation.
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -16,10 +16,11 @@ Perfect for teams using **React**, **Node.js**, **Azure**, **AWS**, **Kafka**, *
 ## 🎯 Perfect For
 
 - **AI-Powered Development** - Generate documentation that enables AI chatbots to understand and extend your codebase
-- **Enterprise Applications** - Full Azure/AWS cloud service pattern recognition
-- **Modern React/Node.js** - Deep understanding of component patterns, hooks, styling approaches
-- **Microservices Architecture** - Kafka, message queues, containerization patterns
-- **Team Onboarding** - Comprehensive documentation for new developers
+- **Backend API Development** - Comprehensive analysis of Express, NestJS, Fastify, GraphQL, and database patterns
+- **Enterprise Applications** - Full security analysis, performance profiling, and infrastructure pattern detection
+- **Modern Full-Stack Applications** - React/Node.js with complete database and API architecture analysis
+- **Microservices Architecture** - API gateway patterns, message queues, containerization, and service communication
+- **Team Onboarding** - Comprehensive documentation with security best practices and architectural insights
 
 ---
 
@@ -27,16 +28,22 @@ Perfect for teams using **React**, **Node.js**, **Azure**, **AWS**, **Kafka**, *
 
 ### 🔍 **Intelligent Pattern Recognition**
 - **React Ecosystem**: Components, hooks, Next.js, React Query, styled-components, Tailwind CSS
+- **Backend Frameworks**: Express.js, NestJS, Fastify, Koa, GraphQL, Socket.io - complete framework analysis
+- **Database & ORM**: Prisma, TypeORM, Sequelize, Mongoose, SQLAlchemy - schema relationships and query optimization
+- **API Architecture**: REST compliance, OpenAPI documentation, versioning strategies, rate limiting
+- **Security Analysis**: Authentication patterns, authorization models, vulnerability detection, secret management
+- **Performance Patterns**: Caching strategies, background jobs, connection pooling, async patterns
 - **Azure Services**: Service Bus, Functions, Storage, Key Vault, Cosmos DB, Event Hubs, Application Insights
 - **AWS Services**: Lambda, S3, SQS, DynamoDB, CloudFormation
-- **Message Queues**: Kafka producers/consumers, Azure Service Bus, AWS SQS
-- **Infrastructure**: Docker, containerization, environment configuration
-- **Security**: JWT, OAuth, SAML, bcrypt, authentication middleware
+- **Infrastructure**: Docker, Kubernetes, monitoring, logging, CI/CD pipelines
 
 ### 📊 **Comprehensive Analysis**
 - **Code Structure**: Directory trees, file organization, architectural patterns
 - **Dependencies**: Internal relationships, external packages, circular dependency detection
-- **APIs**: Express routes, serverless functions, database schemas, authentication flows
+- **Backend APIs**: Multi-framework route detection, middleware analysis, API architecture scoring
+- **Database Analysis**: ORM pattern detection, schema relationships, query optimization opportunities
+- **Security Assessment**: Vulnerability scanning, authentication flow analysis, secret management review
+- **Performance Profiling**: Caching patterns, async implementations, performance bottleneck identification
 - **Component Relationships**: React component trees, prop flows, styling connections
 - **State Management**: Redux, Zustand, Context API, MobX pattern detection
 
@@ -134,15 +141,56 @@ EXAMPLES:
 ✅ Next.js Framework detection
 ```
 
-### **Node.js & Backend Patterns**
+### **Backend API & Server Framework Analysis**
 ```markdown
-✅ Express.js APIs and middleware
-✅ Authentication patterns (JWT, OAuth, Passport.js)
-✅ Database integrations (Prisma, TypeORM, Mongoose)
-✅ Error handling and logging patterns
-✅ API documentation and schemas
-✅ TypeScript interfaces and type definitions
-✅ Async/await and Promise patterns
+✅ Server Frameworks:
+   • Express.js (routes, middleware chains, app configuration)
+   • NestJS (decorators, modules, dependency injection, guards)
+   • Fastify (plugin system, route schemas, hooks)
+   • Koa (middleware composition, context handling)
+   • GraphQL/Apollo Server (resolvers, schemas, subscriptions)
+   • Socket.io (event handlers, namespaces, rooms)
+
+✅ Database & ORM Analysis:
+   • Prisma (models, relations, migrations)
+   • TypeORM (entities, decorators, relationships)
+   • Sequelize (models, associations, hooks)
+   • Mongoose (schemas, models, virtuals)
+   • SQLAlchemy (Python ORM detection)
+   • Query analysis and N+1 problem detection
+
+✅ API Architecture:
+   • RESTful design compliance scoring
+   • OpenAPI/Swagger documentation detection
+   • API versioning strategies (URL path, headers)
+   • Rate limiting implementation analysis
+   • CORS configuration detection
+   • Content negotiation and caching strategies
+
+✅ Security Analysis:
+   • Authentication patterns (JWT, OAuth, session-based)
+   • Authorization models (RBAC, ACL, custom)
+   • Input validation frameworks (Joi, Yup, Zod, class-validator)
+   • Output sanitization and XSS protection
+   • Secret management (env vars, vaults, hardcoded detection)
+   • Security header implementation
+   • Vulnerability detection (code injection, XSS, etc.)
+
+✅ Performance & Reliability:
+   • Async/await patterns and error propagation
+   • Caching implementations (Redis, memory, HTTP)
+   • Background job processing and queues
+   • Database connection pooling
+   • Circuit breaker patterns
+   • Retry logic and exponential backoff
+
+✅ Infrastructure & DevOps:
+   • Configuration management patterns
+   • Structured logging implementations
+   • Health check endpoints
+   • Monitoring and alerting setup
+   • Containerization (Docker, Kubernetes)
+   • CI/CD pipeline detection
 ```
 
 ### **Cloud Services - Azure**
@@ -273,10 +321,13 @@ The analyzer generates comprehensive documentation like this:
 - **Routing**: Next.js file-based routing with dynamic routes
 
 ### Backend Services  
-- **APIs**: 23 Express routes with OpenAPI documentation
-- **Authentication**: JWT middleware + Azure AD integration
-- **Database**: Prisma ORM with PostgreSQL and Cosmos DB
-- **Messaging**: Azure Service Bus for order processing
+- **Server Framework**: NestJS with Express adapter, 23 decorated routes
+- **API Architecture**: RESTful design (92% compliance), OpenAPI 3.0 documentation
+- **Authentication**: JWT + refresh token pattern, Azure AD integration, RBAC authorization
+- **Database**: Prisma ORM with PostgreSQL, TypeORM entities with relationships
+- **Security**: Input validation (Joi), XSS protection, secret management via Azure Key Vault
+- **Performance**: Redis caching layer, background job processing, connection pooling
+- **Messaging**: Azure Service Bus with retry patterns and dead letter handling
 
 ### Infrastructure
 - **Containerization**: Multi-stage Docker builds
@@ -354,9 +405,11 @@ repo-analyzer/
 - **Data Fetching** (React Query, SWR, Apollo Client)
 
 ### **Backend Technologies**
-- **Node.js** (Express, Fastify, Koa)
-- **Authentication** (JWT, OAuth, Passport.js, bcrypt)
-- **Databases** (Prisma, TypeORM, Mongoose, Sequelize)
+- **Server Frameworks** (Express.js, NestJS, Fastify, Koa, GraphQL/Apollo, Socket.io)
+- **Database & ORM** (Prisma, TypeORM, Sequelize, Mongoose, SQLAlchemy)
+- **Authentication & Security** (JWT, OAuth, session management, input validation, secret management)
+- **API Architecture** (REST compliance, OpenAPI/Swagger, versioning, rate limiting, caching)
+- **Performance** (Async patterns, connection pooling, background jobs, caching strategies)
 - **Message Queues** (Kafka, Azure Service Bus, AWS SQS)
 
 ### **Cloud Platforms**

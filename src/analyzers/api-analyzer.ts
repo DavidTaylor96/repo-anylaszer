@@ -1,5 +1,13 @@
 import * as fs from 'fs';
-import { FileInfo, ParseResult, ApiAnalysis, FunctionInfo, ClassInfo, EndpointInfo, ApiSchemaInfo, AuthenticationInfo, ErrorHandlerInfo } from '../types';
+import { 
+  FileInfo, ParseResult, ApiAnalysis, FunctionInfo, ClassInfo, EndpointInfo, ApiSchemaInfo, 
+  AuthenticationInfo, ErrorHandlerInfo, ServerFrameworkInfo, ApiArchitectureInfo, 
+  SecurityAnalysisInfo, PerformancePatternInfo, InfrastructurePatternInfo,
+  MiddlewareInfo, RouteInfo, DecoratorInfo, ConfigurationInfo, RestfulDesignInfo,
+  ApiVersioningInfo, ApiDocumentationInfo, RateLimitingInfo, CachingInfo, CorsInfo,
+  ContentNegotiationInfo, PaginationInfo, OutputSanitizationInfo,
+  AuthorizationInfo, InputValidationInfo, VulnerabilityInfo
+} from '../types';
 
 export class ApiAnalyzer {
   private repoPath: string;
@@ -17,6 +25,11 @@ export class ApiAnalyzer {
     const schemas = this.extractApiSchemas();
     const authentication = this.extractAuthenticationPatterns();
     const errorHandlers = this.extractErrorHandlers();
+    const serverFrameworks = this.extractServerFrameworks();
+    const apiArchitecture = this.analyzeApiArchitecture(endpoints);
+    const security = this.analyzeSecurityPatterns();
+    const performance = this.analyzePerformancePatterns();
+    const infrastructure = this.analyzeInfrastructurePatterns();
 
     return {
       publicFunctions,
@@ -24,7 +37,12 @@ export class ApiAnalyzer {
       endpoints,
       schemas,
       authentication,
-      errorHandlers
+      errorHandlers,
+      serverFrameworks,
+      apiArchitecture,
+      security,
+      performance,
+      infrastructure
     };
   }
 
@@ -907,5 +925,1177 @@ export class ApiAnalyzer {
     }
     
     return { calls: [...new Set(calls)], calledBy: [...new Set(calledBy)] };
+  }
+
+  // Enhanced Backend API Analysis Methods
+
+  private extractServerFrameworks(): ServerFrameworkInfo[] {
+    const frameworks: ServerFrameworkInfo[] = [];
+    const frameworkMap = new Map<string, any>();
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Express.js Detection
+      const expressFramework = this.detectExpressFramework(filePath, fileContent, parseResult);
+      if (expressFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'express', expressFramework);
+      }
+
+      // NestJS Detection
+      const nestFramework = this.detectNestJSFramework(filePath, fileContent, parseResult);
+      if (nestFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'nestjs', nestFramework);
+      }
+
+      // Fastify Detection
+      const fastifyFramework = this.detectFastifyFramework(filePath, fileContent, parseResult);
+      if (fastifyFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'fastify', fastifyFramework);
+      }
+
+      // Koa Detection
+      const koaFramework = this.detectKoaFramework(filePath, fileContent, parseResult);
+      if (koaFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'koa', koaFramework);
+      }
+
+      // GraphQL/Apollo Server Detection
+      const graphqlFramework = this.detectGraphQLFramework(filePath, fileContent, parseResult);
+      if (graphqlFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'apollo-server', graphqlFramework);
+      }
+
+      // Socket.io Detection
+      const socketFramework = this.detectSocketIOFramework(filePath, fileContent, parseResult);
+      if (socketFramework) {
+        this.mergeFrameworkInfo(frameworkMap, 'socket.io', socketFramework);
+      }
+    }
+
+    return Array.from(frameworkMap.values());
+  }
+
+  private detectExpressFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const expressPatterns = [
+      /import.*express.*from.*['"`]express['"`]/,
+      /require\(['"`]express['"`]\)/,
+      /express\(\)/,
+      /app\.use\(/,
+      /app\.(get|post|put|delete|patch)\(/
+    ];
+
+    if (!expressPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const middleware = this.extractExpressMiddleware(content, filePath);
+    const routes = this.extractExpressRoutes(content, filePath, parseResult);
+    const configuration = this.extractExpressConfiguration(content, filePath);
+
+    return {
+      framework: 'express' as const,
+      files: [filePath],
+      middleware,
+      routes,
+      configuration
+    };
+  }
+
+  private detectNestJSFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const nestPatterns = [
+      /@nestjs\/common/,
+      /@nestjs\/core/,
+      /@Controller\(/,
+      /@Injectable\(/,
+      /@Module\(/,
+      /NestFactory\.create/
+    ];
+
+    if (!nestPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const decorators = this.extractNestDecorators(content, filePath);
+    const routes = this.extractNestRoutes(content, filePath, parseResult);
+    const middleware = this.extractNestMiddleware(content, filePath);
+    const configuration = this.extractNestConfiguration(content, filePath);
+
+    return {
+      framework: 'nestjs' as const,
+      files: [filePath],
+      decorators,
+      routes,
+      middleware,
+      configuration
+    };
+  }
+
+  private detectFastifyFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const fastifyPatterns = [
+      /import.*fastify.*from.*['"`]fastify['"`]/,
+      /require\(['"`]fastify['"`]\)/,
+      /fastify\(\)/,
+      /\.register\(/,
+      /\.addHook\(/
+    ];
+
+    if (!fastifyPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const plugins = this.extractFastifyPlugins(content, filePath);
+    const routes = this.extractFastifyRoutes(content, filePath, parseResult);
+    const middleware = this.extractFastifyHooks(content, filePath);
+    const configuration = this.extractFastifyConfiguration(content, filePath);
+
+    return {
+      framework: 'fastify' as const,
+      files: [filePath],
+      plugins,
+      routes,
+      middleware,
+      configuration
+    };
+  }
+
+  private detectKoaFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const koaPatterns = [
+      /import.*Koa.*from.*['"`]koa['"`]/,
+      /require\(['"`]koa['"`]\)/,
+      /new Koa\(\)/,
+      /\.use\(.*ctx.*next/,
+      /ctx\.(request|response|body)/
+    ];
+
+    if (!koaPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const middleware = this.extractKoaMiddleware(content, filePath);
+    const routes = this.extractKoaRoutes(content, filePath, parseResult);
+    const configuration = this.extractKoaConfiguration(content, filePath);
+
+    return {
+      framework: 'koa' as const,
+      files: [filePath],
+      middleware,
+      routes,
+      configuration
+    };
+  }
+
+  private detectGraphQLFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const graphqlPatterns = [
+      /apollo-server/,
+      /ApolloServer/,
+      /buildSchema/,
+      /GraphQLSchema/,
+      /type Query/,
+      /type Mutation/,
+      /@resolver/i
+    ];
+
+    if (!graphqlPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const routes = this.extractGraphQLResolvers(content, filePath, parseResult);
+    const configuration = this.extractGraphQLConfiguration(content, filePath);
+
+    return {
+      framework: 'apollo-server' as const,
+      files: [filePath],
+      routes,
+      configuration
+    };
+  }
+
+  private detectSocketIOFramework(filePath: string, content: string, parseResult: ParseResult): Partial<ServerFrameworkInfo> | null {
+    const socketPatterns = [
+      /socket\.io/,
+      /io\.(on|emit)/,
+      /socket\.(on|emit|broadcast)/,
+      /Server.*socket\.io/,
+      /socketio/
+    ];
+
+    if (!socketPatterns.some(pattern => pattern.test(content))) {
+      return null;
+    }
+
+    const routes = this.extractSocketIOEvents(content, filePath, parseResult);
+    const middleware = this.extractSocketIOMiddleware(content, filePath);
+    const configuration = this.extractSocketIOConfiguration(content, filePath);
+
+    return {
+      framework: 'socket.io' as const,
+      files: [filePath],
+      routes,
+      middleware,
+      configuration
+    };
+  }
+
+  private extractExpressMiddleware(content: string, filePath: string): MiddlewareInfo[] {
+    const middleware: MiddlewareInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const middlewareMatch = line.match(/app\.use\(\s*([^)]+)\s*\)/);
+      
+      if (middlewareMatch) {
+        const middlewareName = middlewareMatch[1].trim();
+        let type: MiddlewareInfo['type'] = 'other';
+        
+        if (middlewareName.includes('cors')) type = 'cors';
+        else if (middlewareName.includes('auth')) type = 'authentication';
+        else if (middlewareName.includes('log')) type = 'logging';
+        else if (middlewareName.includes('rate')) type = 'rate-limiting';
+        else if (middlewareName.includes('valid')) type = 'validation';
+        else if (middlewareName.includes('error')) type = 'error-handling';
+
+        middleware.push({
+          name: middlewareName,
+          type,
+          file: filePath,
+          lineStart: i + 1,
+          description: `Express middleware: ${middlewareName}`,
+          global: true
+        });
+      }
+    }
+
+    return middleware;
+  }
+
+  private extractExpressRoutes(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const routes: RouteInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const routeMatch = line.match(/app\.(get|post|put|delete|patch|use)\s*\(\s*['"`]([^'"`]+)['"`]\s*,?\s*(.*)?\)/);
+      
+      if (routeMatch) {
+        const method = routeMatch[1].toUpperCase();
+        const path = routeMatch[2];
+        const handler = routeMatch[3] || 'anonymous';
+        
+        routes.push({
+          path,
+          method,
+          handler: handler.trim(),
+          file: filePath,
+          middleware: []
+        });
+      }
+    }
+
+    return routes;
+  }
+
+  private extractExpressConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    const config: ConfigurationInfo[] = [];
+    const configPatterns = [
+      { pattern: /app\.set\(['"`]([^'"`]+)['"`],\s*(.+)\)/, type: 'other' as const },
+      { pattern: /app\.use\(cors\((.*)\)\)/, type: 'cors' as const },
+      { pattern: /session\((.*)\)/, type: 'session' as const }
+    ];
+
+    for (const { pattern, type } of configPatterns) {
+      const matches = content.match(pattern);
+      if (matches) {
+        config.push({
+          type,
+          file: filePath,
+          settings: { [matches[1] || 'configuration']: matches[2] || matches[1] },
+          sensitive: type === 'session' || content.includes('secret')
+        });
+      }
+    }
+
+    return config;
+  }
+
+  private extractNestDecorators(content: string, filePath: string): DecoratorInfo[] {
+    const decorators: DecoratorInfo[] = [];
+    const decoratorPatterns = [
+      { pattern: /@Controller\(([^)]*)\)/, type: 'controller' as const },
+      { pattern: /@Injectable\(\)/, type: 'service' as const },
+      { pattern: /@Guard\(([^)]*)\)/, type: 'guard' as const },
+      { pattern: /@Interceptor\(([^)]*)\)/, type: 'interceptor' as const },
+      { pattern: /@Pipe\(([^)]*)\)/, type: 'pipe' as const }
+    ];
+
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      for (const { pattern, type } of decoratorPatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          // Find the class or method this decorator applies to
+          let target = 'unknown';
+          for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+            const nextLine = lines[j].trim();
+            const classMatch = nextLine.match(/class\s+(\w+)/);
+            const methodMatch = nextLine.match(/(\w+)\s*\(/);
+            if (classMatch) {
+              target = classMatch[1];
+              break;
+            } else if (methodMatch) {
+              target = methodMatch[1];
+              break;
+            }
+          }
+
+          decorators.push({
+            name: type,
+            type,
+            file: filePath,
+            target,
+            parameters: match[1] ? [match[1]] : undefined
+          });
+        }
+      }
+    }
+
+    return decorators;
+  }
+
+  private extractNestRoutes(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const routes: RouteInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const routeDecorators = [
+        { pattern: /@Get\(['"`]?([^'"`)]*)['"`]?\)/, method: 'GET' },
+        { pattern: /@Post\(['"`]?([^'"`)]*)['"`]?\)/, method: 'POST' },
+        { pattern: /@Put\(['"`]?([^'"`)]*)['"`]?\)/, method: 'PUT' },
+        { pattern: /@Delete\(['"`]?([^'"`)]*)['"`]?\)/, method: 'DELETE' },
+        { pattern: /@Patch\(['"`]?([^'"`)]*)['"`]?\)/, method: 'PATCH' }
+      ];
+
+      for (const { pattern, method } of routeDecorators) {
+        const match = line.match(pattern);
+        if (match) {
+          const path = match[1] || '';
+          
+          // Find the method name on the next few lines
+          let handler = 'anonymous';
+          for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+            const methodMatch = lines[j].match(/(\w+)\s*\(/);
+            if (methodMatch) {
+              handler = methodMatch[1];
+              break;
+            }
+          }
+
+          routes.push({
+            path,
+            method,
+            handler,
+            file: filePath,
+            middleware: [],
+            guards: this.extractNestGuards(lines, i)
+          });
+        }
+      }
+    }
+
+    return routes;
+  }
+
+  private extractNestGuards(lines: string[], startIndex: number): string[] {
+    const guards: string[] = [];
+    for (let i = Math.max(0, startIndex - 3); i < Math.min(startIndex + 3, lines.length); i++) {
+      const guardMatch = lines[i].match(/@UseGuards\(([^)]+)\)/);
+      if (guardMatch) {
+        guards.push(guardMatch[1]);
+      }
+    }
+    return guards;
+  }
+
+  private extractNestMiddleware(content: string, filePath: string): MiddlewareInfo[] {
+    const middleware: MiddlewareInfo[] = [];
+    const middlewarePattern = /@UseInterceptors\(([^)]+)\)|@UseFilters\(([^)]+)\)|@UsePipes\(([^)]+)\)/g;
+    
+    let match;
+    while ((match = middlewarePattern.exec(content)) !== null) {
+      const name = match[1] || match[2] || match[3];
+      let type: MiddlewareInfo['type'] = 'other';
+      
+      if (name.toLowerCase().includes('auth')) type = 'authentication';
+      else if (name.toLowerCase().includes('valid')) type = 'validation';
+      else if (name.toLowerCase().includes('log')) type = 'logging';
+      else if (name.toLowerCase().includes('error')) type = 'error-handling';
+
+      middleware.push({
+        name,
+        type,
+        file: filePath,
+        lineStart: content.substring(0, match.index).split('\n').length,
+        description: `NestJS middleware: ${name}`,
+        global: false
+      });
+    }
+
+    return middleware;
+  }
+
+  private extractNestConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    const config: ConfigurationInfo[] = [];
+    
+    if (content.includes('@Module(')) {
+      const moduleMatch = content.match(/@Module\(([\s\S]*?)\)/);
+      if (moduleMatch) {
+        config.push({
+          type: 'other',
+          file: filePath,
+          settings: { moduleConfiguration: moduleMatch[1] },
+          sensitive: false
+        });
+      }
+    }
+
+    return config;
+  }
+
+  private extractFastifyPlugins(content: string, filePath: string): any[] {
+    const plugins: any[] = [];
+    const pluginPattern = /\.register\(\s*([^,]+)/g;
+    
+    let match;
+    while ((match = pluginPattern.exec(content)) !== null) {
+      plugins.push({
+        name: match[1].trim(),
+        file: filePath,
+        purpose: `Fastify plugin: ${match[1].trim()}`
+      });
+    }
+
+    return plugins;
+  }
+
+  private extractFastifyRoutes(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const routes: RouteInfo[] = [];
+    const routePattern = /\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*,?\s*(.*)?\)/g;
+    
+    let match;
+    while ((match = routePattern.exec(content)) !== null) {
+      routes.push({
+        path: match[2],
+        method: match[1].toUpperCase(),
+        handler: match[3] || 'anonymous',
+        file: filePath,
+        middleware: []
+      });
+    }
+
+    return routes;
+  }
+
+  private extractFastifyHooks(content: string, filePath: string): MiddlewareInfo[] {
+    const hooks: MiddlewareInfo[] = [];
+    const hookPattern = /\.addHook\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*([^)]+)\)/g;
+    
+    let match;
+    while ((match = hookPattern.exec(content)) !== null) {
+      hooks.push({
+        name: match[2].trim(),
+        type: this.mapFastifyHookType(match[1]),
+        file: filePath,
+        lineStart: content.substring(0, match.index).split('\n').length,
+        description: `Fastify hook: ${match[1]}`,
+        global: true
+      });
+    }
+
+    return hooks;
+  }
+
+  private mapFastifyHookType(hookName: string): MiddlewareInfo['type'] {
+    const hookTypeMap: Record<string, MiddlewareInfo['type']> = {
+      'onRequest': 'authentication',
+      'onResponse': 'logging',
+      'onError': 'error-handling',
+      'preValidation': 'validation',
+      'preHandler': 'authorization'
+    };
+    
+    return hookTypeMap[hookName] || 'other';
+  }
+
+  private extractFastifyConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    const config: ConfigurationInfo[] = [];
+    
+    if (content.includes('fastify(')) {
+      const configMatch = content.match(/fastify\(([\s\S]*?)\)/);
+      if (configMatch) {
+        config.push({
+          type: 'other',
+          file: filePath,
+          settings: { fastifyOptions: configMatch[1] },
+          sensitive: false
+        });
+      }
+    }
+
+    return config;
+  }
+
+  private extractKoaMiddleware(content: string, filePath: string): MiddlewareInfo[] {
+    const middleware: MiddlewareInfo[] = [];
+    const middlewarePattern = /\.use\(\s*([^)]+)\s*\)/g;
+    
+    let match;
+    while ((match = middlewarePattern.exec(content)) !== null) {
+      const name = match[1].trim();
+      let type: MiddlewareInfo['type'] = 'other';
+      
+      if (name.includes('cors')) type = 'cors';
+      else if (name.includes('auth')) type = 'authentication';
+      else if (name.includes('log')) type = 'logging';
+      else if (name.includes('error')) type = 'error-handling';
+
+      middleware.push({
+        name,
+        type,
+        file: filePath,
+        lineStart: content.substring(0, match.index).split('\n').length,
+        description: `Koa middleware: ${name}`,
+        global: true
+      });
+    }
+
+    return middleware;
+  }
+
+  private extractKoaRoutes(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const routes: RouteInfo[] = [];
+    const routePattern = /router\.(get|post|put|delete|patch)\s*\(\s*['"`]([^'"`]+)['"`]\s*,?\s*(.*)?\)/g;
+    
+    let match;
+    while ((match = routePattern.exec(content)) !== null) {
+      routes.push({
+        path: match[2],
+        method: match[1].toUpperCase(),
+        handler: match[3] || 'anonymous',
+        file: filePath,
+        middleware: []
+      });
+    }
+
+    return routes;
+  }
+
+  private extractKoaConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    return []; // Basic implementation - can be expanded
+  }
+
+  private extractGraphQLResolvers(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const resolvers: RouteInfo[] = [];
+    
+    // Extract Query and Mutation resolvers
+    const resolverPattern = /(\w+)\s*:\s*(async\s+)?\([^)]*\)\s*=>/g;
+    let match;
+    
+    while ((match = resolverPattern.exec(content)) !== null) {
+      resolvers.push({
+        path: `/graphql/${match[1]}`,
+        method: 'POST', // GraphQL typically uses POST
+        handler: match[1],
+        file: filePath,
+        middleware: []
+      });
+    }
+
+    return resolvers;
+  }
+
+  private extractGraphQLConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    const config: ConfigurationInfo[] = [];
+    
+    if (content.includes('ApolloServer')) {
+      const configMatch = content.match(/new ApolloServer\(([\s\S]*?)\)/);
+      if (configMatch) {
+        config.push({
+          type: 'other',
+          file: filePath,
+          settings: { apolloServerConfig: configMatch[1] },
+          sensitive: false
+        });
+      }
+    }
+
+    return config;
+  }
+
+  private extractSocketIOEvents(content: string, filePath: string, parseResult: ParseResult): RouteInfo[] {
+    const events: RouteInfo[] = [];
+    const eventPattern = /\.on\s*\(\s*['"`]([^'"`]+)['"`]\s*,\s*([^)]+)\)/g;
+    
+    let match;
+    while ((match = eventPattern.exec(content)) !== null) {
+      events.push({
+        path: `/socket/${match[1]}`,
+        method: 'SOCKET',
+        handler: match[2].trim(),
+        file: filePath,
+        middleware: []
+      });
+    }
+
+    return events;
+  }
+
+  private extractSocketIOMiddleware(content: string, filePath: string): MiddlewareInfo[] {
+    const middleware: MiddlewareInfo[] = [];
+    
+    if (content.includes('.use(')) {
+      const middlewarePattern = /\.use\s*\(\s*([^)]+)\s*\)/g;
+      let match;
+      
+      while ((match = middlewarePattern.exec(content)) !== null) {
+        middleware.push({
+          name: match[1].trim(),
+          type: 'other',
+          file: filePath,
+          lineStart: content.substring(0, match.index).split('\n').length,
+          description: `Socket.IO middleware: ${match[1].trim()}`,
+          global: true
+        });
+      }
+    }
+
+    return middleware;
+  }
+
+  private extractSocketIOConfiguration(content: string, filePath: string): ConfigurationInfo[] {
+    return []; // Basic implementation - can be expanded
+  }
+
+  private mergeFrameworkInfo(map: Map<string, ServerFrameworkInfo>, framework: string, partial: Partial<ServerFrameworkInfo>): void {
+    const existing = map.get(framework);
+    if (existing) {
+      existing.files.push(...(partial.files || []));
+      existing.middleware.push(...(partial.middleware || []));
+      existing.routes.push(...(partial.routes || []));
+      if (partial.plugins) {
+        existing.plugins = (existing.plugins || []).concat(partial.plugins);
+      }
+      if (partial.decorators) {
+        existing.decorators = (existing.decorators || []).concat(partial.decorators);
+      }
+      existing.configuration.push(...(partial.configuration || []));
+    } else {
+      map.set(framework, {
+        framework: framework as any,
+        files: partial.files || [],
+        middleware: partial.middleware || [],
+        routes: partial.routes || [],
+        plugins: partial.plugins,
+        decorators: partial.decorators,
+        configuration: partial.configuration || []
+      });
+    }
+  }
+
+  private analyzeApiArchitecture(endpoints: EndpointInfo[]): ApiArchitectureInfo {
+    return {
+      restfulDesign: this.analyzeRestfulDesign(endpoints),
+      apiVersioning: this.analyzeApiVersioning(endpoints),
+      documentation: this.analyzeApiDocumentation(),
+      rateLimiting: this.analyzeRateLimiting(),
+      caching: this.analyzeCaching(),
+      cors: this.analyzeCors(),
+      contentNegotiation: this.analyzeContentNegotiation(),
+      pagination: this.analyzePagination(endpoints)
+    };
+  }
+
+  private analyzeRestfulDesign(endpoints: EndpointInfo[]): RestfulDesignInfo {
+    let totalScore = 0;
+    const violations: Array<{endpoint: string; issue: string; suggestion: string}> = [];
+    const resourceNaming: Array<{resource: string; endpoints: string[]; score: number}> = [];
+    const httpMethodUsage: Record<string, {count: number; appropriate: boolean}> = {};
+
+    // Analyze each endpoint for RESTful compliance
+    for (const endpoint of endpoints) {
+      let endpointScore = 0;
+      const fullEndpoint = `${endpoint.method} ${endpoint.path}`;
+
+      // Check HTTP method usage
+      httpMethodUsage[endpoint.method] = httpMethodUsage[endpoint.method] || {count: 0, appropriate: true};
+      httpMethodUsage[endpoint.method].count++;
+
+      // Check for RESTful patterns
+      if (this.isRestfulPath(endpoint.path)) endpointScore += 2;
+      if (this.hasAppropriateMethod(endpoint.method, endpoint.path)) endpointScore += 2;
+      else {
+        violations.push({
+          endpoint: fullEndpoint,
+          issue: 'HTTP method not appropriate for endpoint',
+          suggestion: this.suggestAppropriateMethod(endpoint.path)
+        });
+      }
+
+      totalScore += endpointScore;
+    }
+
+    return {
+      adherenceScore: endpoints.length > 0 ? Math.round((totalScore / (endpoints.length * 4)) * 100) : 0,
+      violations,
+      resourceNaming,
+      httpMethodUsage
+    };
+  }
+
+  private isRestfulPath(path: string): boolean {
+    // RESTful paths should be noun-based, use plural forms, and follow /resource/{id}/subresource pattern
+    const restfulPatterns = [
+      /^\/[a-z]+s(\/\{[^}]+\})?(\/[a-z]+s?)?(\/\{[^}]+\})?$/i, // /users/{id}/posts/{postId}
+      /^\/api\/v\d+\/[a-z]+s/i // /api/v1/users
+    ];
+    
+    return restfulPatterns.some(pattern => pattern.test(path));
+  }
+
+  private hasAppropriateMethod(method: string, path: string): boolean {
+    // Basic heuristics for method appropriateness
+    if (method === 'GET' && !path.includes('create') && !path.includes('delete')) return true;
+    if (method === 'POST' && (path.includes('create') || !path.includes('{') || path.endsWith('s'))) return true;
+    if (method === 'PUT' && path.includes('{')) return true;
+    if (method === 'DELETE' && path.includes('{')) return true;
+    if (method === 'PATCH' && path.includes('{')) return true;
+    
+    return false;
+  }
+
+  private suggestAppropriateMethod(path: string): string {
+    if (path.includes('{') && !path.includes('create')) return 'Consider GET, PUT, PATCH, or DELETE';
+    if (path.endsWith('s') || path.includes('create')) return 'Consider POST for creation or GET for listing';
+    return 'Review HTTP method selection';
+  }
+
+  private analyzeApiVersioning(endpoints: EndpointInfo[]): ApiVersioningInfo {
+    const versions = new Set<string>();
+    let strategy: ApiVersioningInfo['strategy'] = 'none';
+    const implementation: Array<{version: string; files: string[]}> = [];
+
+    for (const endpoint of endpoints) {
+      // Check for URL path versioning
+      const pathVersionMatch = endpoint.path.match(/\/v(\d+(?:\.\d+)?)\//);
+      if (pathVersionMatch) {
+        strategy = 'url-path';
+        versions.add(pathVersionMatch[1]);
+      }
+    }
+
+    return {
+      strategy,
+      versions: Array.from(versions),
+      implementation,
+      deprecations: []
+    };
+  }
+
+  private analyzeApiDocumentation(): ApiDocumentationInfo {
+    let type: ApiDocumentationInfo['type'] = 'none';
+    const files: string[] = [];
+
+    // Check for documentation files
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      if (filePath.includes('swagger') || filePath.includes('openapi')) {
+        type = 'openapi';
+        files.push(filePath);
+      }
+    }
+
+    return {
+      type,
+      files,
+      coverage: 0, // Would need more analysis to calculate
+      endpoints: [],
+      schemas: []
+    };
+  }
+
+  private analyzeRateLimiting(): RateLimitingInfo {
+    let enabled = false;
+    const files: string[] = [];
+    let strategy = '';
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      if (fileContent.includes('rate-limit') || fileContent.includes('rateLimit') || 
+          fileContent.includes('express-rate-limit')) {
+        enabled = true;
+        files.push(filePath);
+        strategy = 'express-rate-limit';
+      }
+    }
+
+    return {
+      enabled,
+      strategy,
+      files,
+      configuration: [],
+      storage: enabled ? 'memory' : ''
+    };
+  }
+
+  private analyzeCaching(): CachingInfo {
+    const layers: any[] = [];
+    const strategies: string[] = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      if (fileContent.includes('redis')) {
+        layers.push({
+          type: 'redis',
+          implementation: 'Redis',
+          files: [filePath],
+          configuration: {}
+        });
+      }
+
+      if (fileContent.includes('cache')) {
+        strategies.push('caching');
+      }
+    }
+
+    return {
+      layers,
+      strategies,
+      invalidation: [],
+      ttl: []
+    };
+  }
+
+  private analyzeCors(): CorsInfo {
+    let enabled = false;
+    const files: string[] = [];
+    const configuration = {
+      origins: [] as string[],
+      methods: [] as string[],
+      headers: [] as string[],
+      credentials: false
+    };
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      if (fileContent.includes('cors')) {
+        enabled = true;
+        files.push(filePath);
+      }
+    }
+
+    return {
+      enabled,
+      configuration,
+      files
+    };
+  }
+
+  private analyzeContentNegotiation(): ContentNegotiationInfo {
+    return {
+      supported: ['application/json'],
+      defaultFormat: 'application/json',
+      compression: false,
+      serialization: ['JSON']
+    };
+  }
+
+  private analyzePagination(endpoints: EndpointInfo[]): PaginationInfo {
+    let strategy: PaginationInfo['strategy'] = 'none';
+    const implementation: Array<{endpoint: string; method: string}> = [];
+
+    for (const endpoint of endpoints) {
+      if (endpoint.path.includes('page') || endpoint.path.includes('offset')) {
+        strategy = endpoint.path.includes('page') ? 'page' : 'offset';
+        implementation.push({
+          endpoint: endpoint.path,
+          method: strategy
+        });
+      }
+    }
+
+    return {
+      strategy,
+      implementation,
+      metadata: false
+    };
+  }
+
+  private analyzeSecurityPatterns(): SecurityAnalysisInfo {
+    return {
+      authentication: this.analyzeAuthenticationSecurity(),
+      authorization: this.analyzeAuthorizationPatterns(),
+      inputValidation: this.analyzeInputValidation(),
+      outputSanitization: this.analyzeOutputSanitization(),
+      secretManagement: this.analyzeSecretManagement(),
+      securityHeaders: this.analyzeSecurityHeaders(),
+      encryption: this.analyzeEncryption(),
+      vulnerabilities: this.identifyVulnerabilities()
+    };
+  }
+
+  private analyzeAuthenticationSecurity(): any {
+    // Enhanced authentication analysis
+    return {
+      type: 'jwt',
+      strength: 'moderate',
+      tokenStorage: 'localStorage',
+      sessionSecurity: {
+        secure: false,
+        httpOnly: false,
+        sameSite: 'none',
+        expiration: '24h',
+        regeneration: false
+      },
+      multiFactorAuth: false
+    };
+  }
+
+  private analyzeAuthorizationPatterns(): AuthorizationInfo {
+    return {
+      model: 'none',
+      implementation: [],
+      roles: [],
+      permissions: [],
+      enforcement: []
+    };
+  }
+
+  private analyzeInputValidation(): InputValidationInfo {
+    const frameworks: string[] = [];
+    let coverage = 0;
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      if (fileContent.includes('joi')) frameworks.push('Joi');
+      if (fileContent.includes('yup')) frameworks.push('Yup');
+      if (fileContent.includes('zod')) frameworks.push('Zod');
+      if (fileContent.includes('@IsString') || fileContent.includes('class-validator')) {
+        frameworks.push('class-validator');
+      }
+    }
+
+    return {
+      frameworks: [...new Set(frameworks)],
+      coverage,
+      validatedEndpoints: [],
+      vulnerabilities: []
+    };
+  }
+
+  private analyzeOutputSanitization(): OutputSanitizationInfo {
+    let enabled = false;
+    const libraries: string[] = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      if (fileContent.includes('sanitize') || fileContent.includes('escape')) {
+        enabled = true;
+        libraries.push('sanitization');
+      }
+    }
+
+    return {
+      enabled,
+      libraries,
+      xssProtection: enabled,
+      htmlEncoding: enabled,
+      jsonSerialization: true
+    };
+  }
+
+  private analyzeSecretManagement(): any {
+    let strategy = 'env-vars';
+    const files: string[] = [];
+    const secrets: Array<{type: string; secure: boolean; location: string}> = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for hardcoded secrets (potential vulnerability)
+      if (fileContent.includes('password') && fileContent.includes('=')) {
+        secrets.push({
+          type: 'password',
+          secure: false,
+          location: filePath
+        });
+      }
+
+      if (fileContent.includes('process.env')) {
+        files.push(filePath);
+      }
+    }
+
+    return {
+      strategy,
+      files,
+      secrets,
+      rotation: false,
+      encryption: false
+    };
+  }
+
+  private analyzeSecurityHeaders(): any {
+    return {
+      implemented: [],
+      missing: ['Content-Security-Policy', 'X-Frame-Options', 'X-Content-Type-Options'],
+      configuration: {},
+      score: 0
+    };
+  }
+
+  private analyzeEncryption(): any {
+    return {
+      inTransit: {enabled: false, protocols: [], certificates: []},
+      atRest: {enabled: false, algorithms: [], keyManagement: ''},
+      application: {hashing: [], encryption: [], signing: []}
+    };
+  }
+
+  private identifyVulnerabilities(): VulnerabilityInfo[] {
+    const vulnerabilities: VulnerabilityInfo[] = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for common vulnerabilities
+      if (fileContent.includes('eval(')) {
+        vulnerabilities.push({
+          type: 'Code Injection',
+          description: 'Use of eval() function can lead to code injection',
+          severity: 'high',
+          affected: [filePath],
+          remediation: 'Avoid using eval(), use safer alternatives like JSON.parse() for data parsing',
+          cwe: 'CWE-94'
+        });
+      }
+
+      if (fileContent.includes('innerHTML') && !fileContent.includes('sanitiz')) {
+        vulnerabilities.push({
+          type: 'XSS',
+          description: 'innerHTML usage without sanitization',
+          severity: 'medium',
+          affected: [filePath],
+          remediation: 'Sanitize user input before setting innerHTML or use textContent instead'
+        });
+      }
+    }
+
+    return vulnerabilities;
+  }
+
+  private analyzePerformancePatterns(): PerformancePatternInfo[] {
+    const patterns: PerformancePatternInfo[] = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Async patterns
+      if (fileContent.includes('async') && fileContent.includes('await')) {
+        patterns.push({
+          type: 'async-pattern',
+          description: 'Async/await pattern for non-blocking operations',
+          implementation: 'async/await',
+          files: [filePath],
+          benefits: ['Non-blocking operations', 'Better error handling', 'Improved readability']
+        });
+      }
+
+      // Caching patterns
+      if (fileContent.includes('cache') || fileContent.includes('redis')) {
+        patterns.push({
+          type: 'caching',
+          description: 'Caching implementation for performance optimization',
+          implementation: 'Redis/Memory cache',
+          files: [filePath],
+          benefits: ['Reduced database load', 'Faster response times', 'Better scalability']
+        });
+      }
+
+      // Background job patterns
+      if (fileContent.includes('queue') || fileContent.includes('job') || fileContent.includes('worker')) {
+        patterns.push({
+          type: 'background-job',
+          description: 'Background job processing for long-running tasks',
+          implementation: 'Job queue system',
+          files: [filePath],
+          benefits: ['Non-blocking user experience', 'Better resource utilization', 'Improved reliability']
+        });
+      }
+    }
+
+    return patterns;
+  }
+
+  private analyzeInfrastructurePatterns(): InfrastructurePatternInfo[] {
+    const patterns: InfrastructurePatternInfo[] = [];
+
+    for (const [filePath] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Docker containerization
+      if (filePath.includes('Dockerfile') || filePath.includes('docker-compose')) {
+        patterns.push({
+          type: 'containerization',
+          technology: 'Docker',
+          files: [filePath],
+          configuration: {},
+          purpose: 'Application containerization for consistent deployment',
+          scalability: 'high'
+        });
+      }
+
+      // Kubernetes orchestration
+      if (filePath.includes('k8s') || filePath.includes('kubernetes') || fileContent.includes('apiVersion: apps/v1')) {
+        patterns.push({
+          type: 'orchestration',
+          technology: 'Kubernetes',
+          files: [filePath],
+          configuration: {},
+          purpose: 'Container orchestration and scaling',
+          scalability: 'high'
+        });
+      }
+
+      // Logging patterns
+      if (fileContent.includes('winston') || fileContent.includes('pino') || fileContent.includes('console.log')) {
+        patterns.push({
+          type: 'logging',
+          technology: 'Application logging',
+          files: [filePath],
+          configuration: {},
+          purpose: 'Application monitoring and debugging',
+          scalability: 'medium'
+        });
+      }
+    }
+
+    return patterns;
   }
 }

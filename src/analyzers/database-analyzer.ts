@@ -39,8 +39,12 @@ export class DatabaseAnalyzer {
       }
     }
 
-    // Look for additional schema files
+    // Look for additional schema files with enhanced ORM support
     schemas.push(...this.findPrismaSchemas());
+    schemas.push(...this.findTypeORMSchemas());
+    schemas.push(...this.findSequelizeSchemas());
+    schemas.push(...this.findMongooseSchemas());
+    schemas.push(...this.findSQLAlchemySchemas());
     schemas.push(...this.findSQLSchemas());
     schemas.push(...this.findMongoSchemas());
 
@@ -414,5 +418,379 @@ export class DatabaseAnalyzer {
   private parseSQLFields(lines: string[]): {fields: any[]} {
     // Simplified implementation
     return { fields: [] };
+  }
+
+  // Enhanced ORM Schema Detection Methods
+
+  private findTypeORMSchemas(): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for TypeORM Entity decorator
+      if (fileContent.includes('@Entity(') || fileContent.includes('import') && fileContent.includes('typeorm')) {
+        schemas.push(...this.parseTypeORMEntities(filePath, fileContent));
+      }
+    }
+
+    return schemas;
+  }
+
+  private findSequelizeSchemas(): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for Sequelize model definitions
+      if (fileContent.includes('sequelize.define') || fileContent.includes('DataTypes') || 
+          fileContent.includes('Model.init')) {
+        schemas.push(...this.parseSequelizeModels(filePath, fileContent));
+      }
+    }
+
+    return schemas;
+  }
+
+  private findMongooseSchemas(): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for Mongoose schema definitions
+      if (fileContent.includes('mongoose.Schema') || fileContent.includes('Schema(')) {
+        schemas.push(...this.parseMongooseSchemas(filePath, fileContent));
+      }
+    }
+
+    return schemas;
+  }
+
+  private findSQLAlchemySchemas(): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+
+    for (const [filePath, parseResult] of Object.entries(this.parserResults)) {
+      const fileContent = this.getFileContent(filePath);
+      if (!fileContent) continue;
+
+      // Check for SQLAlchemy model definitions
+      if (fileContent.includes('declarative_base') || fileContent.includes('Column') || 
+          fileContent.includes('sqlalchemy')) {
+        schemas.push(...this.parseSQLAlchemyModels(filePath, fileContent));
+      }
+    }
+
+    return schemas;
+  }
+
+  private parseTypeORMEntities(filePath: string, content: string): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Look for @Entity decorator followed by class
+      if (line.includes('@Entity(')) {
+        let className = '';
+        // Find the class name on subsequent lines
+        for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+          const classMatch = lines[j].match(/export\s+class\s+(\w+)/);
+          if (classMatch) {
+            className = classMatch[1];
+            break;
+          }
+        }
+
+        if (className) {
+          const fields = this.extractTypeORMFields(content, className);
+          const relationships = this.extractTypeORMRelationships(content, className);
+
+          schemas.push({
+            name: className,
+            type: 'entity',
+            fields,
+            relationships,
+            indexes: [],
+            file: filePath,
+            framework: 'typeorm',
+            lineStart: i + 1
+          });
+        }
+      }
+    }
+
+    return schemas;
+  }
+
+  private parseSequelizeModels(filePath: string, content: string): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Look for sequelize.define or Model.init patterns
+      const defineMatch = line.match(/sequelize\.define\(['"`](\w+)['"`]/);
+      const modelMatch = line.match(/class\s+(\w+)\s+extends\s+Model/);
+      
+      if (defineMatch || modelMatch) {
+        const modelName = defineMatch ? defineMatch[1] : (modelMatch ? modelMatch[1] : '');
+        if (modelName) {
+          const fields = this.extractSequelizeFields(content, modelName);
+          
+          schemas.push({
+            name: modelName,
+            type: 'model',
+            fields,
+            relationships: [],
+            indexes: [],
+            file: filePath,
+            framework: 'sequelize',
+            lineStart: i + 1
+          });
+        }
+      }
+    }
+
+    return schemas;
+  }
+
+  private parseMongooseSchemas(filePath: string, content: string): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Look for mongoose.Schema or new Schema
+      if (line.includes('mongoose.Schema') || line.includes('new Schema')) {
+        const schemaVarMatch = line.match(/(?:const|let|var)\s+(\w+(?:Schema)?)/);
+        if (schemaVarMatch) {
+          const schemaName = schemaVarMatch[1];
+          const fields = this.extractMongooseFields(content, schemaName);
+          
+          schemas.push({
+            name: schemaName.replace('Schema', ''),
+            type: 'collection',
+            fields,
+            relationships: [],
+            indexes: [],
+            file: filePath,
+            framework: 'mongoose',
+            lineStart: i + 1
+          });
+        }
+      }
+    }
+
+    return schemas;
+  }
+
+  private parseSQLAlchemyModels(filePath: string, content: string): DatabaseSchemaInfo[] {
+    const schemas: DatabaseSchemaInfo[] = [];
+    const lines = content.split('\n');
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // Look for SQLAlchemy model classes
+      if (line.includes('class') && line.includes('Base')) {
+        const classMatch = line.match(/class\s+(\w+)/);
+        if (classMatch) {
+          const className = classMatch[1];
+          const fields = this.extractSQLAlchemyFields(content, className);
+          
+          schemas.push({
+            name: className,
+            type: 'model',
+            fields,
+            relationships: [],
+            indexes: [],
+            file: filePath,
+            framework: 'sqlalchemy',
+            lineStart: i + 1
+          });
+        }
+      }
+    }
+
+    return schemas;
+  }
+
+  private extractTypeORMFields(content: string, className: string): any[] {
+    const fields: any[] = [];
+    const lines = content.split('\n');
+    let inClass = false;
+
+    for (const line of lines) {
+      if (line.includes(`class ${className}`)) {
+        inClass = true;
+        continue;
+      }
+      
+      if (inClass && line.includes('}') && !line.includes('{')) {
+        break;
+      }
+
+      if (inClass && line.includes('@Column(')) {
+        const fieldMatch = line.match(/(\w+)\s*:\s*(\w+)/);
+        if (fieldMatch) {
+          fields.push({
+            name: fieldMatch[1],
+            type: fieldMatch[2],
+            nullable: line.includes('nullable: true'),
+            unique: line.includes('unique: true'),
+            primaryKey: false,
+            constraints: []
+          });
+        }
+      }
+
+      if (inClass && line.includes('@PrimaryGeneratedColumn(')) {
+        const fieldMatch = line.match(/(\w+)\s*:\s*(\w+)/);
+        if (fieldMatch) {
+          fields.push({
+            name: fieldMatch[1],
+            type: fieldMatch[2],
+            nullable: false,
+            unique: true,
+            primaryKey: true,
+            constraints: []
+          });
+        }
+      }
+    }
+
+    return fields;
+  }
+
+  private extractTypeORMRelationships(content: string, className: string): any[] {
+    const relationships: any[] = [];
+    const lines = content.split('\n');
+
+    for (const line of lines) {
+      if (line.includes('@OneToOne(') || line.includes('@OneToMany(') || 
+          line.includes('@ManyToOne(') || line.includes('@ManyToMany(')) {
+        const relationType = line.includes('OneToOne') ? 'oneToOne' : 
+                           line.includes('OneToMany') ? 'oneToMany' :
+                           line.includes('ManyToOne') ? 'manyToOne' : 'manyToMany';
+        
+        const targetMatch = line.match(/=>\s*(\w+)/);
+        if (targetMatch) {
+          relationships.push({
+            type: relationType,
+            target: targetMatch[1],
+            foreignKey: undefined,
+            joinColumn: undefined
+          });
+        }
+      }
+    }
+
+    return relationships;
+  }
+
+  private extractSequelizeFields(content: string, modelName: string): any[] {
+    const fields: any[] = [];
+    const lines = content.split('\n');
+
+    // Look for field definitions in the model
+    for (const line of lines) {
+      if (line.includes('DataTypes.')) {
+        const fieldMatch = line.match(/(\w+)\s*:\s*\{?[^,}]*DataTypes\.(\w+)/);
+        if (fieldMatch) {
+          fields.push({
+            name: fieldMatch[1],
+            type: fieldMatch[2],
+            nullable: !line.includes('allowNull: false'),
+            unique: line.includes('unique: true'),
+            primaryKey: line.includes('primaryKey: true'),
+            constraints: []
+          });
+        }
+      }
+    }
+
+    return fields;
+  }
+
+  private extractMongooseFields(content: string, schemaName: string): any[] {
+    const fields: any[] = [];
+    const lines = content.split('\n');
+    let inSchema = false;
+
+    for (const line of lines) {
+      if (line.includes(`${schemaName} = new`) || line.includes(`${schemaName}(`)) {
+        inSchema = true;
+        continue;
+      }
+
+      if (inSchema && line.includes('});')) {
+        break;
+      }
+
+      if (inSchema) {
+        const fieldMatch = line.match(/(\w+)\s*:\s*\{?\s*type\s*:\s*(\w+)/);
+        if (fieldMatch) {
+          fields.push({
+            name: fieldMatch[1],
+            type: fieldMatch[2],
+            nullable: !line.includes('required: true'),
+            unique: line.includes('unique: true'),
+            primaryKey: fieldMatch[1] === '_id',
+            constraints: []
+          });
+        }
+      }
+    }
+
+    return fields;
+  }
+
+  private extractSQLAlchemyFields(content: string, className: string): any[] {
+    const fields: any[] = [];
+    const lines = content.split('\n');
+    let inClass = false;
+
+    for (const line of lines) {
+      if (line.includes(`class ${className}`)) {
+        inClass = true;
+        continue;
+      }
+
+      if (inClass && line.includes('Column(')) {
+        const fieldMatch = line.match(/(\w+)\s*=\s*Column\(([^)]+)\)/);
+        if (fieldMatch) {
+          const fieldName = fieldMatch[1];
+          const columnDef = fieldMatch[2];
+          
+          fields.push({
+            name: fieldName,
+            type: this.extractSQLAlchemyType(columnDef),
+            nullable: columnDef.includes('nullable=True'),
+            unique: columnDef.includes('unique=True'),
+            primaryKey: columnDef.includes('primary_key=True'),
+            constraints: []
+          });
+        }
+      }
+    }
+
+    return fields;
+  }
+
+  private extractSQLAlchemyType(columnDef: string): string {
+    if (columnDef.includes('Integer')) return 'Integer';
+    if (columnDef.includes('String')) return 'String';
+    if (columnDef.includes('Boolean')) return 'Boolean';
+    if (columnDef.includes('DateTime')) return 'DateTime';
+    if (columnDef.includes('Text')) return 'Text';
+    return 'Unknown';
   }
 }

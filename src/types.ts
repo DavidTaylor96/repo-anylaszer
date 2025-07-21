@@ -113,6 +113,11 @@ export interface ApiAnalysis {
   schemas?: ApiSchemaInfo[];
   authentication?: AuthenticationInfo[];
   errorHandlers?: ErrorHandlerInfo[];
+  serverFrameworks?: ServerFrameworkInfo[];
+  apiArchitecture?: ApiArchitectureInfo;
+  security?: SecurityAnalysisInfo;
+  performance?: PerformancePatternInfo[];
+  infrastructure?: InfrastructurePatternInfo[];
 }
 
 export interface EndpointInfo {
@@ -836,4 +841,250 @@ export interface UpgradeRecommendationInfo {
   breakingChanges: string[];
   benefits: string[];
   migrationGuide: string;
+}
+
+// Enhanced Backend API Analysis Types
+
+export interface ServerFrameworkInfo {
+  framework: 'express' | 'nestjs' | 'fastify' | 'koa' | 'apollo-server' | 'socket.io' | 'other';
+  version?: string;
+  files: string[];
+  middleware: MiddlewareInfo[];
+  routes: RouteInfo[];
+  plugins?: PluginInfo[];
+  decorators?: DecoratorInfo[];
+  configuration: ConfigurationInfo[];
+}
+
+export interface MiddlewareInfo {
+  name: string;
+  type: 'authentication' | 'authorization' | 'logging' | 'cors' | 'rate-limiting' | 'validation' | 'error-handling' | 'other';
+  file: string;
+  lineStart: number;
+  description: string;
+  global: boolean;
+}
+
+export interface RouteInfo {
+  path: string;
+  method: string;
+  handler: string;
+  file: string;
+  middleware: string[];
+  guards?: string[];
+  validation?: string[];
+  parameters?: RouteParameterInfo[];
+  responses?: RouteResponseInfo[];
+}
+
+export interface RouteParameterInfo {
+  name: string;
+  type: 'path' | 'query' | 'body' | 'header';
+  dataType: string;
+  required: boolean;
+  validation?: string;
+}
+
+export interface RouteResponseInfo {
+  status: number;
+  description: string;
+  schema?: string;
+}
+
+export interface PluginInfo {
+  name: string;
+  file: string;
+  purpose: string;
+  configuration?: string;
+}
+
+export interface DecoratorInfo {
+  name: string;
+  type: 'controller' | 'service' | 'guard' | 'interceptor' | 'pipe' | 'other';
+  file: string;
+  target: string;
+  parameters?: string[];
+}
+
+export interface ConfigurationInfo {
+  type: 'environment' | 'database' | 'cors' | 'session' | 'security' | 'logging' | 'other';
+  file: string;
+  settings: Record<string, any>;
+  sensitive: boolean;
+}
+
+export interface ApiArchitectureInfo {
+  restfulDesign: RestfulDesignInfo;
+  apiVersioning: ApiVersioningInfo;
+  documentation: ApiDocumentationInfo;
+  rateLimiting: RateLimitingInfo;
+  caching: CachingInfo;
+  cors: CorsInfo;
+  contentNegotiation: ContentNegotiationInfo;
+  pagination: PaginationInfo;
+}
+
+export interface RestfulDesignInfo {
+  adherenceScore: number;
+  violations: Array<{endpoint: string; issue: string; suggestion: string}>;
+  resourceNaming: Array<{resource: string; endpoints: string[]; score: number}>;
+  httpMethodUsage: Record<string, {count: number; appropriate: boolean}>;
+}
+
+export interface ApiVersioningInfo {
+  strategy: 'url-path' | 'header' | 'query-param' | 'none';
+  versions: string[];
+  implementation: Array<{version: string; files: string[]}>;
+  deprecations: Array<{version: string; endpoints: string[]; sunsetDate?: string}>;
+}
+
+export interface ApiDocumentationInfo {
+  type: 'openapi' | 'swagger' | 'postman' | 'custom' | 'none';
+  files: string[];
+  coverage: number;
+  endpoints: Array<{endpoint: string; documented: boolean; examples: boolean}>;
+  schemas: Array<{name: string; documented: boolean}>;
+}
+
+export interface RateLimitingInfo {
+  enabled: boolean;
+  strategy: string;
+  files: string[];
+  configuration: Array<{endpoint: string; limits: string; windowSize: string}>;
+  storage: string;
+}
+
+export interface CachingInfo {
+  layers: CacheLayerInfo[];
+  strategies: string[];
+  invalidation: string[];
+  ttl: Array<{key: string; duration: string}>;
+}
+
+export interface CacheLayerInfo {
+  type: 'redis' | 'memory' | 'http' | 'database' | 'cdn';
+  implementation: string;
+  files: string[];
+  configuration: Record<string, any>;
+}
+
+export interface CorsInfo {
+  enabled: boolean;
+  configuration: {
+    origins: string[];
+    methods: string[];
+    headers: string[];
+    credentials: boolean;
+  };
+  files: string[];
+}
+
+export interface ContentNegotiationInfo {
+  supported: string[];
+  defaultFormat: string;
+  compression: boolean;
+  serialization: string[];
+}
+
+export interface PaginationInfo {
+  strategy: 'offset' | 'cursor' | 'page' | 'none';
+  implementation: Array<{endpoint: string; method: string}>;
+  metadata: boolean;
+}
+
+export interface SecurityAnalysisInfo {
+  authentication: AuthenticationSecurityInfo;
+  authorization: AuthorizationInfo;
+  inputValidation: InputValidationInfo;
+  outputSanitization: OutputSanitizationInfo;
+  secretManagement: SecretManagementInfo;
+  securityHeaders: SecurityHeadersInfo;
+  encryption: EncryptionInfo;
+  vulnerabilities: VulnerabilityInfo[];
+}
+
+export interface AuthenticationSecurityInfo extends AuthenticationInfo {
+  strength: 'weak' | 'moderate' | 'strong';
+  tokenStorage: string;
+  sessionSecurity: SessionSecurityInfo;
+  multiFactorAuth: boolean;
+}
+
+export interface SessionSecurityInfo {
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: string;
+  expiration: string;
+  regeneration: boolean;
+}
+
+export interface AuthorizationInfo {
+  model: 'rbac' | 'acl' | 'custom' | 'none';
+  implementation: Array<{type: string; files: string[]; description: string}>;
+  roles: string[];
+  permissions: string[];
+  enforcement: Array<{endpoint: string; guards: string[]}>;
+}
+
+export interface InputValidationInfo {
+  frameworks: string[];
+  coverage: number;
+  validatedEndpoints: Array<{endpoint: string; validation: string[]}>;
+  vulnerabilities: Array<{type: string; endpoints: string[]; severity: 'low' | 'medium' | 'high'}>;
+}
+
+export interface OutputSanitizationInfo {
+  enabled: boolean;
+  libraries: string[];
+  xssProtection: boolean;
+  htmlEncoding: boolean;
+  jsonSerialization: boolean;
+}
+
+export interface SecretManagementInfo {
+  strategy: 'env-vars' | 'vault' | 'key-management' | 'hardcoded';
+  files: string[];
+  secrets: Array<{type: string; secure: boolean; location: string}>;
+  rotation: boolean;
+  encryption: boolean;
+}
+
+export interface SecurityHeadersInfo {
+  implemented: string[];
+  missing: string[];
+  configuration: Record<string, string>;
+  score: number;
+}
+
+export interface EncryptionInfo {
+  inTransit: {enabled: boolean; protocols: string[]; certificates: string[]};
+  atRest: {enabled: boolean; algorithms: string[]; keyManagement: string};
+  application: {hashing: string[]; encryption: string[]; signing: string[]};
+}
+
+export interface VulnerabilityInfo {
+  type: string;
+  description: string;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
+  affected: string[];
+  remediation: string;
+  cwe?: string;
+}
+
+export interface PerformancePatternInfo {
+  type: 'async-pattern' | 'caching' | 'background-job' | 'database-optimization' | 'connection-pooling';
+  description: string;
+  implementation: string;
+  files: string[];
+  benefits: string[];
+  configuration?: Record<string, any>;
+}
+
+export interface InfrastructurePatternInfo {
+  type: 'containerization' | 'orchestration' | 'monitoring' | 'logging' | 'deployment' | 'configuration';
+  technology: string;
+  files: string[];
+  configuration: Record<string, any>;
+  purpose: string;
+  scalability: 'low' | 'medium' | 'high';
 }
